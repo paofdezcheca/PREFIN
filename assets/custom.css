@@ -1,0 +1,398 @@
+/* ============================================================
+   PREFIN — Estilos personalizados (estética minimalista)
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* ---------- Variables ---------- */
+:root {
+  --prefin-ink:       #0F172A;
+  --prefin-fondo:     #FAFAF9;
+  --prefin-superficie:#FFFFFF;
+  --prefin-borde:     #E7E5E4;
+  --prefin-borde-fuerte: #D4D4D8;
+  --prefin-texto-sec: #71717A;
+  --prefin-texto-muted: #A1A1AA;
+  --prefin-verde:     #16A34A;
+  --prefin-rojo:      #DC2626;
+  --prefin-ambar:     #D97706;
+}
+
+/* ---------- Reset y tipografía ---------- */
+body, .dash-app {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  background-color: var(--prefin-fondo) !important;
+  color: var(--prefin-ink);
+  letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Inter', sans-serif !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.02em;
+  color: var(--prefin-ink);
+}
+
+.text-muted {
+  color: var(--prefin-texto-sec) !important;
+}
+
+/* ---------- Navbar ---------- */
+.prefin-navbar {
+  background-color: var(--prefin-superficie) !important;
+  border-bottom: 1px solid var(--prefin-borde);
+  padding: 0.75rem 0;
+  box-shadow: none !important;
+}
+
+.prefin-navbar .navbar-brand {
+  color: var(--prefin-ink) !important;
+  font-weight: 700;
+  font-size: 1.15rem;
+  letter-spacing: -0.02em;
+}
+
+.prefin-navbar .nav-link {
+  color: var(--prefin-texto-sec) !important;
+  font-weight: 500;
+  font-size: 0.9rem;
+  padding: 0.5rem 0.9rem !important;
+  border-radius: 6px;
+  margin: 0 2px;
+  transition: all 0.15s ease;
+}
+
+.prefin-navbar .nav-link:hover {
+  color: var(--prefin-ink) !important;
+  background-color: #F4F4F5;
+}
+
+.prefin-navbar .nav-link.active {
+  color: var(--prefin-ink) !important;
+  background-color: #F4F4F5;
+  font-weight: 600;
+}
+
+/* ---------- Tarjetas ---------- */
+.card {
+  background-color: var(--prefin-superficie) !important;
+  border: 1px solid var(--prefin-borde) !important;
+  border-radius: 12px !important;
+  box-shadow: none !important;
+  transition: border-color 0.2s ease;
+}
+
+.card:hover {
+  border-color: var(--prefin-borde-fuerte) !important;
+}
+
+.card-header {
+  background-color: var(--prefin-superficie) !important;
+  border-bottom: 1px solid var(--prefin-borde) !important;
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: 0.85rem 1.25rem;
+  color: var(--prefin-ink);
+}
+
+.card-body {
+  padding: 1.25rem;
+}
+
+/* ---------- KPI Cards ---------- */
+.kpi-card {
+  background-color: var(--prefin-superficie);
+  border: 1px solid var(--prefin-borde);
+  border-radius: 12px;
+  padding: 1.1rem 1.25rem;
+  height: 100%;
+  transition: border-color 0.2s ease;
+}
+
+.kpi-card:hover {
+  border-color: var(--prefin-borde-fuerte);
+}
+
+.kpi-label {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--prefin-texto-sec);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.4rem;
+}
+
+.kpi-value {
+  font-size: 1.65rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--prefin-ink);
+  line-height: 1.1;
+}
+
+.kpi-sub {
+  font-size: 0.78rem;
+  color: var(--prefin-texto-muted);
+  margin-top: 0.35rem;
+}
+
+.kpi-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+}
+
+/* ---------- Botones ---------- */
+.btn {
+  font-family: 'Inter', sans-serif !important;
+  font-weight: 500 !important;
+  border-radius: 8px !important;
+  padding: 0.5rem 1rem !important;
+  font-size: 0.9rem !important;
+  letter-spacing: -0.01em;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+}
+
+.btn-primary {
+  background-color: var(--prefin-ink) !important;
+  border-color: var(--prefin-ink) !important;
+  color: white !important;
+}
+
+.btn-primary:hover {
+  background-color: #1E293B !important;
+  border-color: #1E293B !important;
+}
+
+.btn-secondary {
+  background-color: var(--prefin-superficie) !important;
+  border-color: var(--prefin-borde-fuerte) !important;
+  color: var(--prefin-ink) !important;
+}
+
+.btn-secondary:hover {
+  background-color: #F4F4F5 !important;
+}
+
+.btn-success {
+  background-color: var(--prefin-verde) !important;
+  border-color: var(--prefin-verde) !important;
+}
+
+.btn-info, .btn-warning, .btn-danger {
+  font-weight: 500 !important;
+}
+
+/* ---------- Inputs ---------- */
+.form-control, .form-select, input[type="text"], input[type="number"] {
+  border: 1px solid var(--prefin-borde-fuerte) !important;
+  border-radius: 8px !important;
+  font-size: 0.9rem !important;
+  padding: 0.5rem 0.75rem !important;
+  background-color: var(--prefin-superficie) !important;
+  color: var(--prefin-ink) !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: var(--prefin-ink) !important;
+  box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08) !important;
+}
+
+.form-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--prefin-ink);
+  margin-bottom: 0.4rem;
+}
+
+/* ---------- Alertas ---------- */
+.alert {
+  border: 1px solid var(--prefin-borde) !important;
+  border-radius: 8px !important;
+  font-size: 0.88rem !important;
+  padding: 0.75rem 1rem !important;
+}
+
+.alert-success {
+  background-color: #F0FDF4 !important;
+  border-color: #BBF7D0 !important;
+  color: #14532D !important;
+}
+
+.alert-warning {
+  background-color: #FFFBEB !important;
+  border-color: #FDE68A !important;
+  color: #78350F !important;
+}
+
+.alert-danger {
+  background-color: #FEF2F2 !important;
+  border-color: #FECACA !important;
+  color: #7F1D1D !important;
+}
+
+.alert-info {
+  background-color: #EFF6FF !important;
+  border-color: #BFDBFE !important;
+  color: #1E3A8A !important;
+}
+
+.alert-secondary {
+  background-color: #F4F4F5 !important;
+  border-color: var(--prefin-borde) !important;
+  color: var(--prefin-texto-sec) !important;
+}
+
+/* ---------- Badges ---------- */
+.badge {
+  font-family: 'Inter', sans-serif !important;
+  font-weight: 500 !important;
+  font-size: 0.72rem !important;
+  padding: 0.3rem 0.55rem !important;
+  border-radius: 6px !important;
+  letter-spacing: 0;
+}
+
+/* ---------- Tablas ---------- */
+.dash-table-container {
+  font-family: 'Inter', sans-serif !important;
+}
+
+.dash-spreadsheet-container {
+  border: 1px solid var(--prefin-borde) !important;
+  border-radius: 8px !important;
+  overflow: hidden;
+}
+
+.dash-table-container .dash-spreadsheet-inner table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+
+/* ---------- Upload area ---------- */
+.upload-area {
+  border: 2px dashed var(--prefin-borde-fuerte) !important;
+  border-radius: 10px !important;
+  background-color: #FAFAF9 !important;
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+
+.upload-area:hover {
+  border-color: var(--prefin-ink) !important;
+  background-color: #F4F4F5 !important;
+}
+
+/* ---------- ListGroup ---------- */
+.list-group-item {
+  border: 1px solid var(--prefin-borde) !important;
+  border-radius: 8px !important;
+  margin-bottom: 6px;
+  font-size: 0.88rem;
+  padding: 0.7rem 0.9rem !important;
+  background-color: var(--prefin-superficie) !important;
+}
+
+.list-group-flush .list-group-item {
+  border-radius: 0 !important;
+  border-left: 0 !important;
+  border-right: 0 !important;
+  margin-bottom: 0;
+}
+
+/* ---------- Slider ---------- */
+.rc-slider-track {
+  background-color: var(--prefin-ink) !important;
+}
+
+.rc-slider-handle {
+  border-color: var(--prefin-ink) !important;
+  background-color: var(--prefin-superficie) !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+}
+
+.rc-slider-handle:hover {
+  border-color: var(--prefin-ink) !important;
+}
+
+.rc-slider-rail {
+  background-color: var(--prefin-borde) !important;
+}
+
+/* ---------- RadioItems / Checklist ---------- */
+.form-check-input:checked {
+  background-color: var(--prefin-ink) !important;
+  border-color: var(--prefin-ink) !important;
+}
+
+.form-check-label {
+  font-size: 0.88rem;
+  color: var(--prefin-ink);
+}
+
+/* ---------- Encabezados de página ---------- */
+.page-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--prefin-ink);
+  margin-bottom: 0.25rem;
+}
+
+.page-subtitle {
+  color: var(--prefin-texto-sec);
+  font-size: 0.95rem;
+  margin-bottom: 2rem;
+}
+
+/* ---------- Scrollbar ---------- */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--prefin-fondo);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--prefin-borde-fuerte);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--prefin-texto-muted);
+}
+
+/* ---------- Logo PREFIN ---------- */
+.prefin-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  background: linear-gradient(135deg, #0F172A 0%, #334155 100%);
+  color: white;
+  font-weight: 700;
+  font-size: 0.85rem;
+  margin-right: 10px;
+  letter-spacing: -0.02em;
+}
+
+/* ---------- Modebar de Plotly más sutil ---------- */
+.modebar {
+  opacity: 0.3 !important;
+  transition: opacity 0.2s ease;
+}
+
+.modebar:hover {
+  opacity: 1 !important;
+}

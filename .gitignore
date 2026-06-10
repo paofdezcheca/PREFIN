@@ -1,0 +1,35 @@
+# Entornos virtuales
+.venv/
+.VENV/
+venv/
+env/
+ENV/
+
+# Bytecode / cachés de Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Variables de entorno y secretos
+.env
+
+# Base de datos SQLite con tokens OAuth (NUNCA subir)
+*.db
+tokens.db
+
+# Logs
+*.log
+*.log.err
+*.err
+
+# Sistema operativo / editores
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Builds / distribución
+build/
+dist/
+*.egg-info/
+.eggs/
