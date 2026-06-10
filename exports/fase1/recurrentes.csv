@@ -1,0 +1,5 @@
+desc_norm,descripcion_ejemplo,categoria,importe_mediano,cv_importe,dia_mes_tipico,n_ocurrencias,meses_distintos,es_ingreso,periodicidad_dias
+nómina empresa sa,NÓMINA EMPRESA SA,Ingresos,1815.3000000000002,0.022,27,20,20,True,32.0
+transferencia alquiler,Transferencia Alquiler,Transferencias,-703.25,0.137,1,36,36,False,31.0
+netflix,Netflix,Restaurantes y Ocio,-15.535,0.06,16,24,19,False,37.0
+disney+,Disney+,Suscripciones,-10.57,0.075,17,20,17,False,53.0

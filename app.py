@@ -24,6 +24,7 @@ from modulos.analyzer import (
     kpis_globales, detectar_anomalias, tendencia_gasto, gasto_diario_semana,
 )
 from modulos.ml_model import ModeloRiesgo
+from modulos.forecast import PrevisorGasto, figura_prevision
 from modulos.digital_twin import estado_actual, simular_escenario, resumen_simulacion
 from modulos.microsavings import (
     resumen_microahorro, objetivos_ahorro, microahorro_por_categoria, OPCIONES_REDONDEO,
@@ -210,8 +211,8 @@ def layout_datos():
                                style={"color": PREFIN_TEXTO_SEC, "fontSize": "0.88rem"}),
 
                         dbc.Label("Meses de historia"),
-                        dcc.Slider(3, 24, 3, value=12, id="sl-meses",
-                                   marks={i: str(i) for i in range(3, 25, 3)}),
+                        dcc.Slider(3, 36, 3, value=12, id="sl-meses",
+                                   marks={i: str(i) for i in range(3, 37, 3)}),
 
                         dbc.Label("Nómina mensual (€)", className="mt-3"),
                         dbc.Input(id="inp-nomina", type="number", value=1800,
@@ -690,6 +691,20 @@ def layout_riesgo(df):
     gasto_fut = pred.get("gasto_futuro_est")
     gasto_fut_txt = f"{gasto_fut:,.2f} €" if gasto_fut else "—"
 
+    # --- Previsión de gasto con incertidumbre (Fase 1) ---
+    try:
+        previsor = PrevisorGasto().fit(df)
+        banda = previsor.predecir(meses_adelante=1).iloc[0]
+        fig_prev = figura_prevision(df, meses_adelante=6)
+        prev_disponible = True
+        prev_modelo_txt = ("Regresión cuantílica" if previsor.usa_modelo_
+                           else "Cuantiles empíricos (histórico corto)")
+    except Exception:
+        banda = None
+        fig_prev = None
+        prev_disponible = False
+        prev_modelo_txt = ""
+
     return dbc.Container([
         html.Div([
             html.H1("Predicción de riesgo", className="page-title"),
@@ -750,6 +765,43 @@ def layout_riesgo(df):
             dbc.Col(dbc.Card(dbc.CardBody(dcc.Graph(figure=fig_imp,
                                                     config={"displayModeBar": False}))),
                     md=12),
+        ]),
+
+        # --- Previsión de gasto con incertidumbre (Fase 1) ---
+        dbc.Row([
+            dbc.Col([
+                dbc.Card([
+                    dbc.CardHeader([
+                        html.I(className="bi bi-graph-up-arrow me-2"),
+                        "Previsión de gasto con incertidumbre",
+                    ]),
+                    dbc.CardBody([
+                        html.P(
+                            "Banda de previsión p10–p90 del gasto mensual. En lugar de un "
+                            "único número, se muestra el rango probable de gasto: cuanto más "
+                            "estrecha es la banda, más predecible es tu gasto.",
+                            style={"color": PREFIN_TEXTO_SEC, "fontSize": "0.85rem"},
+                        ),
+                        dbc.Row([
+                            dbc.Col(kpi_card("Escenario optimista (p10)",
+                                             f"{banda['p10']:,.2f} €",
+                                             "bi-arrow-down", PREFIN_VERDE), md=4),
+                            dbc.Col(kpi_card("Previsión central (p50)",
+                                             f"{banda['p50']:,.2f} €",
+                                             "bi-dot", PREFIN_INK), md=4),
+                            dbc.Col(kpi_card("Escenario tensionado (p90)",
+                                             f"{banda['p90']:,.2f} €",
+                                             "bi-arrow-up", PREFIN_ROJO), md=4),
+                        ], className="mb-3") if prev_disponible else None,
+                        dcc.Graph(figure=fig_prev, config={"displayModeBar": False})
+                        if prev_disponible else dbc.Alert(
+                            "Sin datos suficientes para la previsión.", color="warning"),
+                        html.Small(f"Método: {prev_modelo_txt}",
+                                   style={"color": PREFIN_TEXTO_SEC})
+                        if prev_disponible else None,
+                    ]),
+                ], className="mt-3"),
+            ], md=12),
         ]),
     ], fluid=True, className="px-4")
 

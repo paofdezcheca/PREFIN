@@ -1,0 +1,8 @@
+# Dependencias SOLO de desarrollo / autoría (no necesarias en tiempo de ejecución).
+# Instalar con:  pip install -r requirements-dev.txt
+
+pytest>=8.0            # suite de pruebas (tests/)
+# matplotlib para exportar las figuras estáticas (PNG) que se insertan en la
+# memoria. Se prefiere a kaleido porque el export de Plotly a PNG vía kaleido
+# es frágil en Windows (problemas al cerrar el subproceso de Chromium).
+matplotlib>=3.8        # export estático de figuras a PNG para la memoria
