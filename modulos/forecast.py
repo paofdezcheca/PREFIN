@@ -54,6 +54,11 @@ CUANTILES = (0.1, 0.5, 0.9)
 # este umbral se usan cuantiles empíricos.
 _MIN_MESES_MODELO = 6
 
+# Peso del modelo en la combinación de previsiones (resto = seasonal-naive).
+# Combinar con una referencia robusta (Bates & Granger, 1969) reduce el error y,
+# sobre todo, la varianza cuando hay pocos datos y estacionalidad anual.
+_PESO_MODELO = 0.5
+
 # Parámetros de detección de flujos recurrentes. Criterio conservador: preferimos
 # perder algún recurrente (que se quedará en el gasto variable y aún se prevé con
 # incertidumbre) antes que confundir gasto discrecional con un compromiso fijo.
@@ -258,12 +263,14 @@ class PrevisorGasto:
         self._modelo_med = QuantileRegressor(quantile=0.5, alpha=0.001, solver="highs")
         self._modelo_med.fit(X, y_train)
 
-        # Intervalo por cuantiles empíricos de los residuos en muestra. Para una
-        # serie cercana a ruido i.i.d. alrededor de un nivel, esto calibra la
-        # banda mejor que tres regresiones cuantílicas independientes con pocos
-        # datos. La calibración formal (conformal) se aborda en la fase de
-        # validación.
-        residuos = y_train - self._modelo_med.predict(X)
+        # Predicción en muestra = combinación del modelo con el seasonal-naive.
+        naive = self._naive_estacional(serie)[1:]  # alineado con y_train (filas 1..n-1)
+        blend = _PESO_MODELO * self._modelo_med.predict(X) + (1 - _PESO_MODELO) * naive
+
+        # Intervalo por cuantiles empíricos de los residuos de la combinación.
+        # Calibra la banda mejor que tres regresiones cuantílicas independientes
+        # con pocos datos; la calibración formal (conformal) se trata en Fase 6.
+        residuos = y_train - blend
         self._res_q = {q: float(np.quantile(residuos, q)) for q in self.cuantiles}
         self.usa_modelo_ = True
         self._fallback = None
@@ -275,7 +282,10 @@ class PrevisorGasto:
         """Construye la matriz de variables para toda la serie (sin recortar).
 
         Variables: tendencia (t/12), estacionalidad anual (sen, cos de 12 meses)
-        y rezago de un mes.
+        y rezago de un mes (lag1). El modelo es deliberadamente sencillo (lineal,
+        pocos parámetros) para no sobreajustar con ~24-35 puntos; la señal
+        estacional anual se aporta por separado mediante la combinación con el
+        seasonal-naive (ver `_naive_estacional` y la mezcla en fit/predecir).
         """
         y = serie.values.astype(float)
         n = len(y)
@@ -286,6 +296,21 @@ class PrevisorGasto:
         lag1 = np.roll(y, 1)
         lag1[0] = y[0]
         return np.column_stack([t, sen, cos, lag1])
+
+    @staticmethod
+    def _naive_estacional(serie: pd.Series) -> np.ndarray:
+        """Predicción seasonal-naive en muestra: y[t-12] si existe, si no y[t-1]."""
+        y = serie.values.astype(float)
+        n = len(y)
+        naive = np.empty(n)
+        for i in range(n):
+            if i >= 12:
+                naive[i] = y[i - 12]
+            elif i >= 1:
+                naive[i] = y[i - 1]
+            else:
+                naive[i] = y[i]
+        return naive
 
     def _construir_features(self, serie: pd.Series):
         """Devuelve (X, y) alineados, descartando la primera fila (rezago)."""
@@ -324,11 +349,15 @@ class PrevisorGasto:
             mes = periodo.month
             x = np.array([[t, np.sin(2 * np.pi * mes / 12.0),
                            np.cos(2 * np.pi * mes / 12.0), cur_lag]])
-            med = float(self._modelo_med.predict(x)[0])
-            # Banda = mediana + cuantiles de residuos (monótona por construcción).
+            med_modelo = float(self._modelo_med.predict(x)[0])
+            # seasonal-naive: mismo mes del año anterior, si está; si no, último valor.
+            periodo_12 = periodo - 12
+            naive = float(serie.loc[periodo_12]) if periodo_12 in serie.index else cur_lag
+            med = _PESO_MODELO * med_modelo + (1 - _PESO_MODELO) * naive
+            # Banda = combinación + cuantiles de residuos (monótona por construcción).
             banda = np.clip(np.sort([med + self._res_q[q] for q in self.cuantiles]), 0.0, None)
             filas.append(self._fila(periodo, h, banda, recurrente))
-            cur_lag = med  # rezago para el siguiente horizonte = mediana prevista
+            cur_lag = med  # rezago para el siguiente horizonte = mediana combinada
         return pd.DataFrame(filas)
 
     def _fila(self, periodo, horizonte, banda, recurrente) -> dict:

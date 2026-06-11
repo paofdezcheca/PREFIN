@@ -1,10 +1,10 @@
 {
   "n_folds": 28,
-  "mae": 289.04,
-  "rmse": 447.66,
-  "mape": 16.5,
-  "cobertura": 0.643,
-  "mae_baseline": 325.26,
-  "rmse_baseline": 393.73,
+  "mae": 330.79,
+  "rmse": 389.73,
+  "mape": 19.0,
+  "cobertura": 0.679,
+  "mae_baseline": 321.31,
+  "rmse_baseline": 366.39,
   "nivel_cobertura_objetivo": 0.8
 }
