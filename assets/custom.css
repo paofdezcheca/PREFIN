@@ -2,13 +2,14 @@
    PREFIN — Estilos personalizados (estética minimalista)
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@500;600;700&display=swap');
 
 /* ---------- Variables: sistema por capas (slate frío + acento índigo) ---------- */
 :root {
   --prefin-ink:       #0F172A;
-  --prefin-fondo:     #F8FAFC;   /* base */
+  --prefin-fondo:     #E9EEF6;   /* base (slate suave, claramente no blanco) */
   --prefin-superficie:#FFFFFF;   /* tarjetas */
+  --prefin-navbar:    #14213D;   /* azul marino de la navbar */
   --prefin-elev:      #FFFFFF;   /* superficie elevada (se distingue por sombra) */
   --prefin-borde:     #E2E8F0;
   --prefin-borde-fuerte: #CBD5E1;
@@ -47,63 +48,66 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--prefin-texto-sec) !important;
 }
 
-/* ---------- Navbar (más cuerpo + gradiente muy sutil) ---------- */
+/* ---------- Navbar (azul marino + gradiente sutil) ---------- */
 .prefin-navbar {
-  background: linear-gradient(180deg, #FFFFFF 0%, #FBFCFE 100%) !important;
-  border-bottom: 1px solid var(--prefin-borde);
-  padding: 0.95rem 0;
-  box-shadow: var(--prefin-sombra) !important;
+  background: linear-gradient(90deg, #14213D 0%, #1E335C 100%) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  padding: 1rem 0;
+  box-shadow: 0 2px 12px rgba(15,23,42,0.18) !important;
   position: sticky;
   top: 0;
   z-index: 1020;
 }
 
 .prefin-navbar .navbar-brand {
-  color: var(--prefin-ink) !important;
+  color: #FFFFFF !important;
   font-weight: 700;
-  font-size: 1.2rem;
-  letter-spacing: -0.02em;
+  font-size: 1.35rem;
+  letter-spacing: -0.01em;
 }
 
 .prefin-navbar .nav-link {
-  color: var(--prefin-texto-sec) !important;
+  color: #CBD5E1 !important;            /* slate-300 sobre navy */
   font-weight: 500;
-  font-size: 0.9rem;
-  padding: 0.55rem 0.95rem !important;
+  font-size: 1.02rem;                   /* opciones más grandes */
+  padding: 0.55rem 1.05rem !important;
   border-radius: 8px;
   margin: 0 3px;
   transition: all 0.15s ease;
 }
 
 .prefin-navbar .nav-link:hover {
-  color: var(--prefin-ink) !important;
-  background-color: #F1F5F9;
+  color: #FFFFFF !important;
+  background-color: rgba(255,255,255,0.10);
 }
 
 .prefin-navbar .nav-link.active {
-  color: var(--prefin-acento-osc) !important;
-  background-color: var(--prefin-acento-suave);
+  color: #FFFFFF !important;
+  background-color: rgba(129,140,248,0.22);   /* índigo translúcido */
   font-weight: 600;
-  box-shadow: inset 0 0 0 1px rgba(99,102,241,0.18);
+  box-shadow: inset 0 0 0 1px rgba(165,180,252,0.45);
+}
+
+.prefin-navbar .nav-link i {
+  opacity: 0.85;
 }
 
 /* ---------- Tarjetas ---------- */
 .card {
   background-color: var(--prefin-superficie) !important;
-  border: 1px solid var(--prefin-borde) !important;
+  border: 1px solid var(--prefin-borde);   /* sin !important: permite acento por tarjeta */
   border-radius: 14px !important;
   box-shadow: var(--prefin-sombra) !important;
   transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 }
 
 .card:hover {
-  border-color: var(--prefin-borde-fuerte) !important;
   box-shadow: var(--prefin-sombra-md) !important;
 }
 
 .card-header {
-  background-color: var(--prefin-superficie) !important;
-  border-bottom: 1px solid var(--prefin-borde) !important;
+  background-color: var(--prefin-superficie);   /* sin !important: permite tinte por tarjeta */
+  border-bottom: 1px solid var(--prefin-borde);
   font-weight: 600;
   font-size: 0.95rem;
   padding: 0.85rem 1.25rem;
@@ -364,16 +368,19 @@ h1, h2, h3, h4, h5, h6 {
 
 /* ---------- Encabezados de página ---------- */
 .page-title {
-  font-size: 1.6rem;
+  font-family: 'Sora', 'Inter', sans-serif;
+  font-size: 1.95rem;
   font-weight: 700;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.025em;
   color: var(--prefin-ink);
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.3rem;
+  line-height: 1.15;
 }
 
 .page-subtitle {
-  color: var(--prefin-texto-sec);
-  font-size: 0.95rem;
+  color: #475569;                /* slate-600: contraste AA sobre el fondo */
+  font-size: 1rem;
+  max-width: 760px;
   margin-bottom: 2rem;
 }
 
@@ -426,11 +433,11 @@ h1, h2, h3, h4, h5, h6 {
    PASE DE ESTÉTICA Y USABILIDAD
    ============================================================ */
 
-/* ---------- Tipografía con intención: display serif para titulares ---------- */
+/* ---------- Tipografía con intención: display sans moderna (Sora) ---------- */
 .page-title, .prefin-brand-display {
-  font-family: 'Fraunces', Georgia, 'Times New Roman', serif !important;
-  font-weight: 600 !important;
-  letter-spacing: -0.01em;
+  font-family: 'Sora', 'Inter', sans-serif !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.02em;
 }
 
 /* ---------- Números tabulares: el dinero alinea en columnas ---------- */

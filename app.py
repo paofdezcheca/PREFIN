@@ -1472,21 +1472,35 @@ def ejecutar_simulacion(n, store_data, horizonte, cambio_ing, cambios_cat,
 # ============================================================
 # CALLBACKS — MI PLAN (motor prescriptivo)
 # ============================================================
+# Paleta profesional para distinguir las tarjetas de plan (acento, fondo de
+# cabecera, texto oscuro). El recomendado va en verde (es el "bueno"); las
+# alternativas usan acentos NO semánticos (índigo, cian, violeta, slate) para no
+# sugerir falsamente precaución/riesgo.
+PALETA_PLANES = [
+    ("#16A34A", "#F0FDF4", "#14532D"),   # recomendado · verde
+    ("#6366F1", "#EEF2FF", "#3730A3"),   # índigo
+    ("#0EA5E9", "#E0F2FE", "#075985"),   # cian
+    ("#8B5CF6", "#F5F3FF", "#5B21B6"),   # violeta
+    ("#0D9488", "#ECFDF5", "#115E59"),   # teal
+]
+
+
 def _tarjeta_plan(plan, idx, recomendado=False):
-    """Tarjeta de un plan propuesto, con impacto cuantificado."""
+    """Tarjeta de un plan propuesto, con impacto cuantificado y color distintivo."""
     riesgo = plan["prob_iliquidez"]
     color_riesgo = (PREFIN_VERDE if riesgo < 0.05
                     else PREFIN_AMBAR if riesgo < 0.15 else PREFIN_ROJO)
-    encabezado = ([html.I(className="bi bi-trophy-fill me-2"),
-                   f"Plan recomendado"] if recomendado
-                  else [f"Alternativa {idx}"])
+    acento, fondo_hdr, texto = PALETA_PLANES[idx % len(PALETA_PLANES)]
+    encabezado = ([html.I(className="bi bi-trophy-fill me-2"), "Plan recomendado"]
+                  if recomendado else
+                  [html.I(className="bi bi-lightbulb me-2"), f"Alternativa {idx}"])
     return dbc.Card([
         dbc.CardHeader(encabezado,
-                       style={"fontWeight": "600",
-                              "backgroundColor": "#F0FDF4" if recomendado else None}),
+                       style={"fontWeight": "600", "backgroundColor": fondo_hdr,
+                              "color": texto, "borderBottom": f"1px solid {acento}33"}),
         dbc.CardBody([
             html.Div(f"{plan['ahorro_protegido']:,.0f} €", style={
-                "fontSize": "1.8rem", "fontWeight": "700", "color": PREFIN_INK,
+                "fontSize": "1.9rem", "fontWeight": "700", "color": texto,
                 "fontVariantNumeric": "tabular-nums"}),
             html.Div("ahorro acumulado en el horizonte",
                      style={"color": PREFIN_TEXTO_SEC, "fontSize": "0.82rem"}),
@@ -1501,7 +1515,7 @@ def _tarjeta_plan(plan, idx, recomendado=False):
                                  "marginLeft": "8px"}),
             ]),
         ]),
-    ], className="mb-3 h-100")
+    ], className="mb-3 h-100", style={"borderLeft": f"4px solid {acento}"})
 
 
 @app.callback(

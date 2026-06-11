@@ -23,8 +23,9 @@ CATEGORIAS = [
 # El significado del color semántico (verde/ámbar/rojo) NO cambia.
 # ---------------------------------------------------------------------------
 PREFIN_INK         = "#0F172A"   # Texto principal (slate-900)
-PREFIN_FONDO       = "#F8FAFC"   # Fondo base (slate-50, no blanco puro)
+PREFIN_FONDO       = "#E9EEF6"   # Fondo base (slate suave, claramente no blanco)
 PREFIN_SUPERFICIE  = "#FFFFFF"   # Tarjetas (un plano por encima del fondo)
+PREFIN_NAVBAR      = "#14213D"   # Azul marino de la barra de navegación
 PREFIN_SUPERFICIE_ELEV = "#FFFFFF"  # Superficie elevada (se distingue por sombra)
 PREFIN_BORDE       = "#E2E8F0"   # Bordes sutiles (slate-200)
 PREFIN_BORDE_FUERTE = "#CBD5E1"  # Bordes con más presencia (slate-300)
@@ -97,7 +98,8 @@ PLOTLY_LAYOUT = dict(
     yaxis=dict(showgrid=True, gridcolor=PREFIN_BORDE, linecolor=PREFIN_BORDE,
                automargin=True, zeroline=False,
                tickfont=dict(color=PREFIN_TEXTO_SEC)),
-    title=dict(font=dict(size=15, color=PREFIN_INK), x=0.02, xanchor="left"),
+    title=dict(font=dict(size=18, color=PREFIN_INK), x=0.02, xanchor="left",
+               pad=dict(b=8)),
     legend=dict(font=dict(size=11, color=PREFIN_INK)),
     colorway=[PREFIN_ACENTO, PREFIN_INK, PREFIN_VERDE, PREFIN_AMBAR, PREFIN_ROJO,
               "#8B5CF6", "#64748B"],
