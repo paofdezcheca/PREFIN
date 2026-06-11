@@ -537,43 +537,46 @@ a:focus-visible, button:focus-visible, .btn:focus-visible,
   color: #3730A3 !important;
 }
 
-/* ---------- Tabla de transacciones (diseño propio) ---------- */
-.tx-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.9rem;
-}
-.tx-table thead th {
-  text-align: left;
-  font-size: 0.72rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--prefin-texto-sec);
-  padding: 0 0.9rem 0.6rem;
+/* ---------- Transacciones (diseño "feed": avatar + categoría + importe) ---------- */
+.tx-list { display: flex; flex-direction: column; }
+.tx-row {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.7rem 0.6rem;
   border-bottom: 1px solid var(--prefin-borde);
+  border-radius: 10px;
+  transition: background-color 0.12s ease;
 }
-.tx-table tbody td {
-  padding: 0.7rem 0.9rem;
-  border-bottom: 1px solid var(--prefin-borde);
-  color: var(--prefin-ink);
-  vertical-align: middle;
+.tx-row:last-child { border-bottom: none; }
+.tx-row:hover { background-color: #F1F5F9; }
+.tx-avatar {
+  width: 40px; height: 40px; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 11px; font-size: 1.15rem;
 }
-.tx-table tbody tr { transition: background-color 0.12s ease; }
-.tx-table tbody tr:hover { background-color: #F1F5F9; }
-.tx-table tbody tr:last-child td { border-bottom: none; }
-.tx-fecha { color: var(--prefin-texto-sec); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.tx-desc { font-weight: 500; }
+.tx-main { flex: 1; min-width: 0; }
+.tx-desc {
+  font-weight: 600; font-size: 0.9rem; color: var(--prefin-ink);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.tx-cat { font-size: 0.76rem; font-weight: 500; margin-top: 1px; }
+.tx-fecha {
+  color: var(--prefin-texto-sec); font-size: 0.8rem; white-space: nowrap;
+  font-variant-numeric: tabular-nums; flex-shrink: 0;
+}
 .tx-importe {
-  text-align: right; font-weight: 600; white-space: nowrap;
+  font-weight: 700; font-size: 0.95rem; white-space: nowrap;
+  font-variant-numeric: tabular-nums; flex-shrink: 0; min-width: 95px;
+  text-align: right;
+}
+.tx-sigma {
+  flex-shrink: 0;
+  background: #FEF3C7; color: #92400E;
+  font-weight: 700; font-size: 0.74rem;
+  padding: 2px 8px; border-radius: 999px;
   font-variant-numeric: tabular-nums;
 }
-.tx-badge {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 3px 10px; border-radius: 999px;
-  font-size: 0.78rem; font-weight: 500; white-space: nowrap;
-}
-.tx-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
 
 /* ---------- Metas de micro-ahorro (estilo tarjeta con icono) ---------- */
 .meta-card {

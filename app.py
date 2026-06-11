@@ -425,34 +425,54 @@ def layout_datos():
 
 
 # ============================================================
-# Tabla de transacciones (diseño propio, con badges de categoría)
+# Listas de transacciones (diseño "feed": avatar + categoría + importe)
 # ============================================================
-def _tabla_transacciones(df, n=10):
+ICONO_CATEGORIA = {
+    "Supermercado": "bi-cart3", "Restaurantes y Ocio": "bi-cup-straw",
+    "Transporte": "bi-bus-front", "Servicios del Hogar": "bi-house-door",
+    "Suscripciones": "bi-arrow-repeat", "Salud y Farmacia": "bi-heart-pulse",
+    "Ropa y Compras": "bi-bag", "Educación": "bi-mortarboard",
+    "Transferencias": "bi-arrow-left-right", "Ingresos": "bi-cash-coin",
+    "Otros": "bi-three-dots",
+}
+
+
+def _fila_tx(r, *, avatar_icono=None, avatar_color=None, extra=None):
+    """Una fila tipo 'feed': avatar de categoría + descripción/categoría + extra + importe."""
+    cat = r["categoria"]
+    col = COLORES_CATEGORIA.get(cat, PREFIN_TEXTO_SEC)
+    es_ingreso = r["importe"] >= 0
+    col_imp = PREFIN_VERDE if es_ingreso else PREFIN_ROJO
+    icono = avatar_icono or ICONO_CATEGORIA.get(cat, "bi-tag")
+    color_av = avatar_color or col
+    hijos = [
+        html.Div(html.I(className=f"bi {icono}"), className="tx-avatar",
+                 style={"backgroundColor": color_av + "1A", "color": color_av}),
+        html.Div([
+            html.Div(r["descripcion"], className="tx-desc"),
+            html.Div(cat, className="tx-cat", style={"color": col}),
+        ], className="tx-main"),
+    ]
+    if extra is not None:
+        hijos.append(extra)
+    hijos.append(html.Div(r["fecha"].strftime("%d/%m/%Y"), className="tx-fecha"))
+    hijos.append(html.Div(f"{r['importe']:+,.2f} €", className="tx-importe",
+                          style={"color": col_imp}))
+    return html.Div(hijos, className="tx-row")
+
+
+def _tabla_transacciones(df, n=12):
     filas = df.tail(n).iloc[::-1]
-    cuerpo = []
-    for _, r in filas.iterrows():
-        cat = r["categoria"]
-        col = COLORES_CATEGORIA.get(cat, PREFIN_TEXTO_SEC)
-        es_ingreso = r["importe"] >= 0
-        col_imp = PREFIN_VERDE if es_ingreso else PREFIN_ROJO
-        icono = "bi-arrow-down-left" if es_ingreso else "bi-arrow-up-right"
-        cuerpo.append(html.Tr([
-            html.Td(r["fecha"].strftime("%d/%m/%Y"), className="tx-fecha"),
-            html.Td(r["descripcion"], className="tx-desc"),
-            html.Td(html.Span([
-                html.Span(className="tx-dot", style={"backgroundColor": col}),
-                cat,
-            ], className="tx-badge", style={"backgroundColor": col + "14", "color": col})),
-            html.Td([html.I(className=f"bi {icono} me-1"), f"{r['importe']:+,.2f} €"],
-                    className="tx-importe", style={"color": col_imp}),
-        ]))
-    return html.Table([
-        html.Thead(html.Tr([
-            html.Th("Fecha"), html.Th("Descripción"),
-            html.Th("Categoría"), html.Th("Importe", style={"textAlign": "right"}),
-        ])),
-        html.Tbody(cuerpo),
-    ], className="tx-table")
+    return html.Div([_fila_tx(r) for _, r in filas.iterrows()], className="tx-list")
+
+
+def _tabla_anomalias(df_anom):
+    filas = []
+    for _, r in df_anom.iterrows():
+        sigma = html.Span(f"{r['z_score']:.1f}σ", className="tx-sigma")
+        filas.append(_fila_tx(r, avatar_icono="bi-exclamation-triangle",
+                              avatar_color=PREFIN_AMBAR, extra=sigma))
+    return html.Div(filas, className="tx-list")
 
 
 # ============================================================
@@ -671,37 +691,11 @@ def layout_analisis(df):
             ]),
             dbc.CardBody([
                 html.P(
-                    "Transacciones con un importe superior a 2.5σ por encima de la media de su categoría.",
+                    "Transacciones con un importe superior a 2.5σ por encima de la "
+                    "media de su categoría.",
                     style={"color": PREFIN_TEXTO_SEC, "fontSize": "0.85rem"},
-                ) if len(anom_df) > 0 else None,
-                dash_table.DataTable(
-                    data=anom_df[["fecha_str", "descripcion", "categoria",
-                                  "importe_str", "z_str"]].to_dict("records"),
-                    columns=[
-                        {"name": "Fecha", "id": "fecha_str"},
-                        {"name": "Descripción", "id": "descripcion"},
-                        {"name": "Categoría", "id": "categoria"},
-                        {"name": "Importe", "id": "importe_str"},
-                        {"name": "Desviación", "id": "z_str"},
-                    ],
-                    style_cell={
-                        "textAlign": "left", "padding": "10px 14px",
-                        "fontFamily": "Inter", "fontSize": "0.88rem",
-                        "border": "none",
-                        "borderBottom": f"1px solid {PREFIN_BORDE}",
-                        "color": PREFIN_INK,
-                    },
-                    style_header={
-                        "backgroundColor": "#FAFAF9",
-                        "fontWeight": "600", "color": PREFIN_TEXTO_SEC,
-                        "fontSize": "0.78rem",
-                        "textTransform": "uppercase",
-                        "letterSpacing": "0.04em",
-                        "border": "none",
-                        "borderBottom": f"1px solid {PREFIN_BORDE}",
-                    },
-                    page_size=8,
-                ) if not anom_df.empty else dbc.Alert(
+                ) if not anom_df.empty else None,
+                _tabla_anomalias(anom_df) if not anom_df.empty else dbc.Alert(
                     [html.I(className="bi bi-check-circle me-2"),
                      "No se han detectado anomalías destacables."],
                     color="success", className="mb-0"),
