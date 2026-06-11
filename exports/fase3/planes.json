@@ -1,0 +1,97 @@
+{
+  "umbral": 0.1,
+  "meses": 12,
+  "n_evaluados": 279,
+  "baseline_riesgo": 0.0028,
+  "planes": [
+    {
+      "ahorro_programado": 200,
+      "redondeo_unidad": 1,
+      "recortes": {
+        "Restaurantes y Ocio": -30,
+        "Ropa y Compras": -30,
+        "Suscripciones": -10
+      },
+      "mes_evento": 1,
+      "aparta_mensual": 212.05,
+      "redondeo_mensual": 12.05,
+      "ahorro_protegido": 2544.6,
+      "prob_iliquidez": 0.0714,
+      "var_95": -156.62,
+      "saldo_final_esperado": 1236.01,
+      "esfuerzo": 0.511,
+      "explicacion": "Si decides apartar 200 €/mes; redondear tus compras al múltiplo de 1 € (≈12 €/mes); recortar un 30% en Restaurantes y Ocio; recortar un 30% en Ropa y Compras; recortar un 10% en Suscripciones, en 12 meses acumularías ≈ 2545 € de ahorro protegido, manteniendo el riesgo de quedarte sin dinero en un 7% (frente al 0% actual)."
+    },
+    {
+      "ahorro_programado": 200,
+      "redondeo_unidad": 0,
+      "recortes": {
+        "Restaurantes y Ocio": -30,
+        "Ropa y Compras": -30
+      },
+      "mes_evento": 1,
+      "aparta_mensual": 200.0,
+      "redondeo_mensual": 0.0,
+      "ahorro_protegido": 2400.0,
+      "prob_iliquidez": 0.0568,
+      "var_95": -60.3,
+      "saldo_final_esperado": 1336.03,
+      "esfuerzo": 0.411,
+      "explicacion": "Si decides apartar 200 €/mes; recortar un 30% en Restaurantes y Ocio; recortar un 30% en Ropa y Compras, en 12 meses acumularías ≈ 2400 € de ahorro protegido, manteniendo el riesgo de quedarte sin dinero en un 6% (frente al 0% actual)."
+    },
+    {
+      "ahorro_programado": 200,
+      "redondeo_unidad": 0,
+      "recortes": {
+        "Restaurantes y Ocio": -10,
+        "Ropa y Compras": -30,
+        "Suscripciones": -20
+      },
+      "mes_evento": 1,
+      "aparta_mensual": 200.0,
+      "redondeo_mensual": 0.0,
+      "ahorro_protegido": 2400.0,
+      "prob_iliquidez": 0.0684,
+      "var_95": -142.97,
+      "saldo_final_esperado": 1259.88,
+      "esfuerzo": 0.411,
+      "explicacion": "Si decides apartar 200 €/mes; recortar un 10% en Restaurantes y Ocio; recortar un 30% en Ropa y Compras; recortar un 20% en Suscripciones, en 12 meses acumularías ≈ 2400 € de ahorro protegido, manteniendo el riesgo de quedarte sin dinero en un 7% (frente al 0% actual)."
+    },
+    {
+      "ahorro_programado": 200,
+      "redondeo_unidad": 0,
+      "recortes": {
+        "Restaurantes y Ocio": -20,
+        "Ropa y Compras": -30,
+        "Suscripciones": -10
+      },
+      "mes_evento": 1,
+      "aparta_mensual": 200.0,
+      "redondeo_mensual": 0.0,
+      "ahorro_protegido": 2400.0,
+      "prob_iliquidez": 0.063,
+      "var_95": -102.22,
+      "saldo_final_esperado": 1297.95,
+      "esfuerzo": 0.411,
+      "explicacion": "Si decides apartar 200 €/mes; recortar un 20% en Restaurantes y Ocio; recortar un 30% en Ropa y Compras; recortar un 10% en Suscripciones, en 12 meses acumularías ≈ 2400 € de ahorro protegido, manteniendo el riesgo de quedarte sin dinero en un 6% (frente al 0% actual)."
+    },
+    {
+      "ahorro_programado": 200,
+      "redondeo_unidad": 0,
+      "recortes": {
+        "Restaurantes y Ocio": -20,
+        "Ropa y Compras": -20,
+        "Suscripciones": -30
+      },
+      "mes_evento": 1,
+      "aparta_mensual": 200.0,
+      "redondeo_mensual": 0.0,
+      "ahorro_protegido": 2400.0,
+      "prob_iliquidez": 0.0762,
+      "var_95": -167.76,
+      "saldo_final_esperado": 1239.68,
+      "esfuerzo": 0.461,
+      "explicacion": "Si decides apartar 200 €/mes; recortar un 20% en Restaurantes y Ocio; recortar un 20% en Ropa y Compras; recortar un 30% en Suscripciones, en 12 meses acumularías ≈ 2400 € de ahorro protegido, manteniendo el riesgo de quedarte sin dinero en un 8% (frente al 0% actual)."
+    }
+  ]
+}

@@ -29,6 +29,7 @@ from modulos.digital_twin import (
     estado_actual, simular_escenario, resumen_simulacion,
     simular_montecarlo, figura_cono_montecarlo,
 )
+from modulos.prescriptor import optimizar_plan
 from modulos.microsavings import (
     resumen_microahorro, objetivos_ahorro, microahorro_por_categoria, OPCIONES_REDONDEO,
 )
@@ -138,6 +139,8 @@ NAVBAR = dbc.Navbar(
                                     href="/riesgo", active="exact")),
             dbc.NavItem(dbc.NavLink([html.I(className="bi bi-diagram-3 me-1"), "Gemelo Digital"],
                                     href="/simulacion", active="exact")),
+            dbc.NavItem(dbc.NavLink([html.I(className="bi bi-stars me-1"), "Mi Plan"],
+                                    href="/plan", active="exact")),
             dbc.NavItem(dbc.NavLink([html.I(className="bi bi-piggy-bank me-1"), "Micro-Ahorro"],
                                     href="/ahorro", active="exact")),
             dbc.NavItem(dbc.NavLink([html.I(className="bi bi-database me-1"), "Datos"],
@@ -906,6 +909,70 @@ def layout_simulacion(df):
 
 
 # ============================================================
+# PÁGINA: MI PLAN (motor prescriptivo)
+# ============================================================
+def layout_plan(df):
+    if df is None or df.empty:
+        return _pantalla_sin_datos()
+
+    return dbc.Container([
+        html.Div([
+            html.H1("Mi plan", className="page-title"),
+            html.P("PREFIN busca por ti el mejor plan de ahorro: cuánto puedes "
+                   "apartar cada mes sin arriesgarte a quedarte sin dinero.",
+                   className="page-subtitle"),
+        ], className="pt-4"),
+
+        dbc.Row([
+            dbc.Col([
+                dbc.Card([
+                    dbc.CardHeader([html.I(className="bi bi-sliders me-2"),
+                                     "Tus preferencias"]),
+                    dbc.CardBody([
+                        dbc.Label("Horizonte (meses)"),
+                        dcc.Slider(6, 24, 6, value=12, id="pl-horizonte",
+                                   marks={6: "6", 12: "12", 18: "18", 24: "24"}),
+
+                        dbc.Label("Riesgo máximo que aceptas", className="mt-3"),
+                        html.P("Probabilidad de quedarte sin dinero que estás "
+                               "dispuesto a tolerar.",
+                               style={"color": PREFIN_TEXTO_SEC, "fontSize": "0.78rem"}),
+                        dcc.Slider(0.05, 0.30, 0.05, value=0.10, id="pl-umbral",
+                                   marks={0.05: "5%", 0.10: "10%", 0.20: "20%",
+                                          0.30: "30%"}),
+
+                        dbc.Label("¿Tienes un gasto puntual previsto? (€)",
+                                  className="mt-3"),
+                        dbc.Input(id="pl-gasto", type="number", value=0,
+                                  min=0, step=100),
+                        html.Small("0 = ninguno. Si lo indicas, el plan elige el "
+                                   "mejor mes para afrontarlo.",
+                                   style={"color": PREFIN_TEXTO_SEC,
+                                          "fontSize": "0.75rem"}),
+
+                        dbc.Button(
+                            [html.I(className="bi bi-stars me-2"), "Ver mi plan"],
+                            id="btn-plan", color="primary",
+                            className="mt-4 w-100", n_clicks=0,
+                        ),
+                    ]),
+                ]),
+            ], md=3, className="mb-3"),
+
+            dbc.Col([
+                dcc.Loading(
+                    html.Div(id="div-plan-resultado", children=dbc.Alert(
+                        [html.I(className="bi bi-info-circle me-2"),
+                         "Pulsa «Ver mi plan» para que PREFIN calcule tus opciones."],
+                        color="light")),
+                    type="default",
+                ),
+            ], md=9),
+        ]),
+    ], fluid=True, className="px-4")
+
+
+# ============================================================
 # PÁGINA: MICRO-AHORRO
 # ============================================================
 def layout_ahorro(df):
@@ -959,6 +1026,7 @@ def render_page(pathname, store_data):
         "/analisis":   lambda: layout_analisis(df),
         "/riesgo":     lambda: layout_riesgo(df),
         "/simulacion": lambda: layout_simulacion(df),
+        "/plan":       lambda: layout_plan(df),
         "/ahorro":     lambda: layout_ahorro(df),
         "/datos":      lambda: layout_datos(),
     }
@@ -1142,6 +1210,85 @@ def ejecutar_simulacion(n, store_data, horizonte, cambio_ing, cambios_cat,
                 figure=fig_iliq, config={"displayModeBar": False},
                 style={"height": "440px"}))), md=4, className="mb-3"),
         ]),
+    ])
+
+
+# ============================================================
+# CALLBACKS — MI PLAN (motor prescriptivo)
+# ============================================================
+def _tarjeta_plan(plan, idx, recomendado=False):
+    """Tarjeta de un plan propuesto, con impacto cuantificado."""
+    riesgo = plan["prob_iliquidez"]
+    color_riesgo = (PREFIN_VERDE if riesgo < 0.05
+                    else PREFIN_AMBAR if riesgo < 0.15 else PREFIN_ROJO)
+    encabezado = ([html.I(className="bi bi-trophy-fill me-2"),
+                   f"Plan recomendado"] if recomendado
+                  else [f"Alternativa {idx}"])
+    return dbc.Card([
+        dbc.CardHeader(encabezado,
+                       style={"fontWeight": "600",
+                              "backgroundColor": "#F0FDF4" if recomendado else None}),
+        dbc.CardBody([
+            html.Div(f"{plan['ahorro_protegido']:,.0f} €", style={
+                "fontSize": "1.8rem", "fontWeight": "700", "color": PREFIN_INK,
+                "fontVariantNumeric": "tabular-nums"}),
+            html.Div("ahorro acumulado en el horizonte",
+                     style={"color": PREFIN_TEXTO_SEC, "fontSize": "0.82rem"}),
+            html.Hr(style={"margin": "0.7rem 0", "borderColor": PREFIN_BORDE}),
+            html.P(plan["explicacion"], style={"fontSize": "0.88rem"}),
+            html.Div([
+                html.Span("Riesgo de iliquidez: ",
+                          style={"color": PREFIN_TEXTO_SEC, "fontSize": "0.82rem"}),
+                html.Strong(f"{riesgo:.0%}", style={"color": color_riesgo}),
+                html.Span(f"  ·  Peor caso (VaR): {plan['var_95']:,.0f} €",
+                          style={"color": PREFIN_TEXTO_SEC, "fontSize": "0.82rem",
+                                 "marginLeft": "8px"}),
+            ]),
+        ]),
+    ], className="mb-3 h-100")
+
+
+@app.callback(
+    Output("div-plan-resultado", "children"),
+    Input("btn-plan", "n_clicks"),
+    State("store-df", "data"),
+    State("pl-horizonte", "value"),
+    State("pl-umbral", "value"),
+    State("pl-gasto", "value"),
+    prevent_initial_call=True,
+)
+def calcular_plan(n, store_data, horizonte, umbral, gasto):
+    df = _df_from_store(store_data)
+    if df is None or df.empty:
+        return dbc.Alert("Sin datos. Carga primero un dataset.", color="warning")
+
+    res = optimizar_plan(
+        df, meses=horizonte or 12,
+        umbral_iliquidez_max=umbral or 0.10,
+        gasto_puntual=gasto or 0.0,
+    )
+    planes = res["planes"]
+    if not planes:
+        return dbc.Alert(
+            [html.I(className="bi bi-emoji-frown me-2"),
+             "No he encontrado ningún plan de ahorro que mantenga tu riesgo por "
+             "debajo del umbral. Prueba a subir el riesgo aceptable o a reducir "
+             "el gasto puntual previsto."],
+            color="warning")
+
+    cols = []
+    for i, plan in enumerate(planes):
+        cols.append(dbc.Col(_tarjeta_plan(plan, i, recomendado=(i == 0)),
+                            md=6, lg=4))
+
+    return html.Div([
+        dbc.Alert(
+            [html.I(className="bi bi-lightbulb me-2"),
+             f"He evaluado {res['n_evaluados']} combinaciones de acciones y estas "
+             f"son las mejores que mantienen tu riesgo por debajo del "
+             f"{res['umbral']:.0%}."],
+            color="light", className="mb-3"),
+        dbc.Row(cols),
     ])
 
 
