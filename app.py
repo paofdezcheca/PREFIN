@@ -25,7 +25,10 @@ from modulos.analyzer import (
 )
 from modulos.ml_model import ModeloRiesgo
 from modulos.forecast import PrevisorGasto, figura_prevision
-from modulos.digital_twin import estado_actual, simular_escenario, resumen_simulacion
+from modulos.digital_twin import (
+    estado_actual, simular_escenario, resumen_simulacion,
+    simular_montecarlo, figura_cono_montecarlo,
+)
 from modulos.microsavings import (
     resumen_microahorro, objetivos_ahorro, microahorro_por_categoria, OPCIONES_REDONDEO,
 )
@@ -1075,65 +1078,69 @@ def ejecutar_simulacion(n, store_data, horizonte, cambio_ing, cambios_cat,
     if df is None or df.empty:
         return dbc.Alert("Sin datos. Carga primero un dataset.", color="warning")
 
-    estado = estado_actual(df)
-    sim = simular_escenario(
-        estado=estado,
+    # --- Gemelo digital estocástico (Monte Carlo) ---
+    mc = simular_montecarlo(
+        df,
         meses=horizonte or 12,
+        n_sim=5000,
         cambio_ingreso_pct=cambio_ing or 0,
         cambios_categoria=cambios_cat or {},
         evento_imprevisto=imprevisto or 0,
+        mes_evento=1,
         meta_ahorro_mensual=meta if meta and meta > 0 else None,
+        umbral_iliquidez=0.0,
     )
-    resumen = resumen_simulacion(sim)
+    if not mc:
+        return dbc.Alert("Sin datos suficientes para simular.", color="warning")
 
-    # Saldo
-    fig_saldo = px.line(
-        sim, x="mes", y="saldo_acumulado", color="escenario",
-        title="Proyección de saldo · Actual vs Simulado",
-        labels={"saldo_acumulado": "Saldo (€)", "mes": "Mes"},
-        color_discrete_map={"Actual": "#A1A1AA", "Simulado": PREFIN_INK},
-        markers=True,
+    fig_cono = figura_cono_montecarlo(mc)
+
+    # P(iliquidez) por mes.
+    bandas = mc["bandas"]
+    fig_iliq = px.area(
+        bandas, x="mes", y="prob_iliquidez",
+        title="Probabilidad de iliquidez por mes",
+        labels={"prob_iliquidez": "P(saldo < 0)", "mes": "Mes"},
+        color_discrete_sequence=[PREFIN_ROJO],
     )
-    fig_saldo.update_traces(line=dict(width=2))
-    aplicar_layout_plotly(fig_saldo)
+    fig_iliq.update_traces(line=dict(width=2), fillcolor="rgba(220,38,38,0.10)")
+    fig_iliq.update_yaxes(tickformat=".0%", range=[0, 1])
+    aplicar_layout_plotly(fig_iliq)
 
-    # Ahorro
-    fig_ahorro = px.bar(
-        sim, x="mes", y="ahorro", color="escenario", barmode="group",
-        title="Ahorro mensual · Actual vs Simulado",
-        color_discrete_map={"Actual": "#A1A1AA", "Simulado": PREFIN_VERDE},
-    )
-    aplicar_layout_plotly(fig_ahorro)
-
-    delta_saldo = resumen.get("diferencia_saldo", 0)
-    mejora_ahorro = resumen.get("mejora_ahorro", 0)
+    prob_horizonte = mc["prob_iliquidez_horizonte"]
+    color_prob = (PREFIN_VERDE if prob_horizonte < 0.05
+                  else PREFIN_AMBAR if prob_horizonte < 0.20 else PREFIN_ROJO)
+    color_var = PREFIN_VERDE if mc["var_95"] >= 0 else PREFIN_ROJO
 
     return html.Div([
+        # KPIs estocásticos.
         dbc.Row([
-            dbc.Col(kpi_card("Saldo actual final",
-                             f"{resumen.get('saldo_final_actual', 0):,.2f} €",
-                             "bi-wallet2", PREFIN_TEXTO_SEC), md=3, className="mb-3"),
-            dbc.Col(kpi_card("Saldo simulado final",
-                             f"{resumen.get('saldo_final_simulado', 0):,.2f} €",
-                             "bi-wallet-fill", PREFIN_INK), md=3, className="mb-3"),
-            dbc.Col(kpi_card("Diferencia",
-                             f"{delta_saldo:+,.2f} €",
-                             "bi-arrow-left-right",
-                             PREFIN_VERDE if delta_saldo >= 0 else PREFIN_ROJO),
-                    md=3, className="mb-3"),
-            dbc.Col(kpi_card("Mejora ahorro total",
-                             f"{mejora_ahorro:+,.2f} €",
-                             "bi-piggy-bank",
-                             PREFIN_VERDE if mejora_ahorro >= 0 else PREFIN_ROJO),
-                    md=3, className="mb-3"),
+            dbc.Col(kpi_card("Saldo final esperado",
+                             f"{mc['saldo_final_esperado']:,.0f} €",
+                             "bi-wallet-fill", PREFIN_INK,
+                             "media de 5.000 escenarios"), md=3, className="mb-3"),
+            dbc.Col(kpi_card("Riesgo de quedarte sin dinero",
+                             f"{prob_horizonte:.0%}",
+                             "bi-exclamation-triangle", color_prob,
+                             "en algún mes del horizonte"), md=3, className="mb-3"),
+            dbc.Col(kpi_card("Peor caso probable (VaR 95%)",
+                             f"{mc['var_95']:,.0f} €",
+                             "bi-graph-down-arrow", color_var,
+                             "saldo mínimo, 95% confianza"), md=3, className="mb-3"),
+            dbc.Col(kpi_card("Caso extremo medio (CVaR)",
+                             f"{mc['cvar_95']:,.0f} €",
+                             "bi-arrow-down-circle",
+                             PREFIN_VERDE if mc["cvar_95"] >= 0 else PREFIN_ROJO,
+                             "media del 5% peor"), md=3, className="mb-3"),
         ]),
+        # Cono Monte Carlo (elemento protagonista).
         dbc.Row([
-            dbc.Col(dbc.Card(dbc.CardBody(dcc.Graph(figure=fig_saldo,
-                                                    config={"displayModeBar": False}))),
-                    md=7, className="mb-3"),
-            dbc.Col(dbc.Card(dbc.CardBody(dcc.Graph(figure=fig_ahorro,
-                                                    config={"displayModeBar": False}))),
-                    md=5, className="mb-3"),
+            dbc.Col(dbc.Card(dbc.CardBody(dcc.Graph(
+                figure=fig_cono, config={"displayModeBar": False},
+                style={"height": "440px"}))), md=8, className="mb-3"),
+            dbc.Col(dbc.Card(dbc.CardBody(dcc.Graph(
+                figure=fig_iliq, config={"displayModeBar": False},
+                style={"height": "440px"}))), md=4, className="mb-3"),
         ]),
     ])
 

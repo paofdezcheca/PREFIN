@@ -1,0 +1,9 @@
+{
+  "saldo_inicial": 2417.52,
+  "n_sim": 8000,
+  "var_95": -1224.36,
+  "cvar_95": -1606.92,
+  "prob_iliquidez_horizonte": 0.5573,
+  "saldo_final_esperado": 533.7,
+  "ahorro_total_esperado": -1883.82
+}
