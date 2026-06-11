@@ -26,6 +26,7 @@ from modulos.analyzer import (
 from modulos.riesgo_futuro import ModeloRiesgoFuturo
 from fuentes.generator import generar_multiusuario
 from modulos.forecast import PrevisorGasto, figura_prevision
+from modulos.explicador import explicar_natural, figura_contribuciones
 from modulos.digital_twin import (
     estado_actual, simular_escenario, resumen_simulacion,
     simular_montecarlo, figura_cono_montecarlo,
@@ -615,10 +616,18 @@ def layout_riesgo(df):
     if df is None or df.empty:
         return _pantalla_sin_datos()
 
-    pred = _asegurar_modelo().predecir(df)
+    _modelo = _asegurar_modelo()
+    pred = _modelo.predecir(df)
     nivel = pred["nivel"]
     score = pred["score"]
     met = pred.get("metricas", {})
+
+    # Explicabilidad (Fase 5): por qué el modelo predice este nivel.
+    try:
+        explic = explicar_natural(_modelo, df) if pred.get("entrenado") else None
+        fig_contrib = figura_contribuciones(_modelo, df) if pred.get("entrenado") else None
+    except Exception:
+        explic, fig_contrib = None, None
 
     # --- Gauge ---
     fig_gauge = go.Figure(go.Indicator(
@@ -838,6 +847,52 @@ def layout_riesgo(df):
                         style={"color": PREFIN_TEXTO_SEC}),
                 ]),
             ]), md=4),
+        ]),
+
+        # --- Explicabilidad: ¿por qué este nivel? (Fase 5) ---
+        dbc.Row([
+            dbc.Col([
+                dbc.Card([
+                    dbc.CardHeader([html.I(className="bi bi-chat-square-text me-2"),
+                                     "¿Por qué este nivel de riesgo?"]),
+                    dbc.CardBody([
+                        html.Div([
+                            html.Div([
+                                html.Strong("Lo que eleva tu riesgo",
+                                            style={"color": PREFIN_ROJO,
+                                                   "fontSize": "0.9rem"}),
+                                html.Ul([html.Li(f, style={"fontSize": "0.88rem",
+                                                            "marginBottom": "4px"})
+                                         for f in explic["frases_sube"]]
+                                        or [html.Li("Nada destacable.",
+                                                    style={"color": PREFIN_TEXTO_SEC})]),
+                            ], style={"marginBottom": "0.8rem"}),
+                            html.Div([
+                                html.Strong("Lo que te protege",
+                                            style={"color": PREFIN_VERDE,
+                                                   "fontSize": "0.9rem"}),
+                                html.Ul([html.Li(f, style={"fontSize": "0.88rem",
+                                                            "marginBottom": "4px"})
+                                         for f in explic["frases_baja"]]
+                                        or [html.Li("Nada destacable.",
+                                                    style={"color": PREFIN_TEXTO_SEC})]),
+                            ]),
+                            html.Small(f"Método: {explic['metodo']}",
+                                       style={"color": PREFIN_TEXTO_SEC}),
+                        ]) if explic else html.Span(
+                            "Explicación no disponible.",
+                            style={"color": PREFIN_TEXTO_SEC}),
+                    ]),
+                ], className="mt-3 h-100"),
+            ], md=5),
+            dbc.Col([
+                dbc.Card(dbc.CardBody(
+                    dcc.Graph(figure=fig_contrib, config={"displayModeBar": False})
+                    if fig_contrib is not None else html.Span(
+                        "Sin contribuciones que mostrar.",
+                        style={"color": PREFIN_TEXTO_SEC})),
+                    className="mt-3 h-100"),
+            ], md=7),
         ]),
 
         # --- Previsión de gasto con incertidumbre (Fase 1) ---

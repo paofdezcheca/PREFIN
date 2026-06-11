@@ -112,6 +112,7 @@ class ModeloRiesgoFuturo:
         self._entrenado = False
         self.metricas_ = {}
         self.importancias_ = {}
+        self.X_ref_ = None  # media poblacional de features (para explicación)
 
     def entrenar(self, df_multi: pd.DataFrame) -> "ModeloRiesgoFuturo":
         """Entrena sobre el panel multiusuario con validación por grupos."""
@@ -145,6 +146,8 @@ class ModeloRiesgoFuturo:
         self.clf.fit(X, y)
         self.importancias_ = dict(zip(
             FEATURES, self.clf.named_steps["rf"].feature_importances_))
+        # Referencia poblacional (media de features): base para la explicación.
+        self.X_ref_ = X.mean(axis=0)
         self._entrenado = True
         return self
 

@@ -1,0 +1,66 @@
+{
+  "metodo": "shap",
+  "prob": 0.4835,
+  "frases_sube": [
+    "Tu ingreso mensual es de 1,889 €, lo que eleva tu riesgo.",
+    "Tus gastos varían ±399 € entre meses, lo que eleva tu riesgo.",
+    "Gastas 93% de lo que ingresas, lo que eleva tu riesgo."
+  ],
+  "frases_baja": [
+    "Tu gasto viene creciendo (+315 €/mes), lo que reduce tu riesgo.",
+    "Gastas 1 €/mes en suscripciones, lo que reduce tu riesgo.",
+    "Destinas 3% de tu ingreso a ocio, lo que reduce tu riesgo."
+  ],
+  "contribuciones": [
+    {
+      "feature": "ingreso_mensual",
+      "contribucion": 0.20277951064053923,
+      "valor": 1888.97
+    },
+    {
+      "feature": "variabilidad_gasto",
+      "contribucion": 0.17769295014477393,
+      "valor": 399.08055665469203
+    },
+    {
+      "feature": "tendencia_gasto",
+      "contribucion": -0.10008135026964737,
+      "valor": 315.32499999999993
+    },
+    {
+      "feature": "gasto_suscripciones",
+      "contribucion": -0.026521007504925365,
+      "valor": 1.23
+    },
+    {
+      "feature": "gasto_ocio_ratio",
+      "contribucion": -0.018969466786074918,
+      "valor": 0.028846408360111597
+    },
+    {
+      "feature": "gasto_total",
+      "contribucion": -0.009689327998785302,
+      "valor": 1759.8400000000001
+    },
+    {
+      "feature": "gasto_supermercado",
+      "contribucion": -0.005719443077396136,
+      "valor": 472.64
+    },
+    {
+      "feature": "ratio_gasto_ingreso",
+      "contribucion": 0.002758301008725539,
+      "valor": 0.9316399942825985
+    },
+    {
+      "feature": "ratio_ahorro",
+      "contribucion": 0.0005416666099335998,
+      "valor": 0.06836000571740153
+    },
+    {
+      "feature": "n_categorias_activas",
+      "contribucion": 0.0,
+      "valor": 7.0
+    }
+  ]
+}
