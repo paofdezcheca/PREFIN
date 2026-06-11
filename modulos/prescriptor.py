@@ -196,6 +196,7 @@ def optimizar_plan(
                            cats_medias, gasto_puntual, seed=seed)
         if ref and ref["prob_iliquidez"] <= umbral_iliquidez_max:
             ref["esfuerzo"] = _esfuerzo(plan, ingreso_mensual)
+            ref["acciones"] = _acciones(ref)
             ref["explicacion"] = _explicar(ref, baseline, meses)
             finalistas.append(ref)
 
@@ -209,18 +210,24 @@ def optimizar_plan(
     }
 
 
+def _acciones(plan: dict) -> list:
+    """Lista de acciones del plan en lenguaje llano (para mostrar como bullets)."""
+    acc = []
+    if plan["ahorro_programado"] > 0:
+        acc.append(f"Aparta {plan['ahorro_programado']:.0f} € cada mes")
+    if plan["redondeo_unidad"] > 0:
+        acc.append(f"Redondea tus compras al múltiplo de {plan['redondeo_unidad']} € "
+                   f"(≈ {plan['redondeo_mensual']:.0f} €/mes)")
+    for cat, pct in plan["recortes"].items():
+        acc.append(f"Recorta un {abs(pct):.0f}% en {cat}")
+    if not acc:
+        acc.append("Mantén tus hábitos actuales")
+    return acc
+
+
 def _explicar(plan: dict, baseline: dict, meses: int) -> str:
     """Genera una explicación en lenguaje llano del plan, con impacto cuantificado."""
-    partes = []
-    if plan["ahorro_programado"] > 0:
-        partes.append(f"apartar {plan['ahorro_programado']:.0f} €/mes")
-    if plan["redondeo_unidad"] > 0:
-        partes.append(f"redondear tus compras al múltiplo de {plan['redondeo_unidad']} € "
-                      f"(≈{plan['redondeo_mensual']:.0f} €/mes)")
-    for cat, pct in plan["recortes"].items():
-        partes.append(f"recortar un {abs(pct):.0f}% en {cat}")
-
-    accion = "; ".join(partes) if partes else "sin cambios"
+    accion = "; ".join(a.lower() for a in _acciones(plan))
     riesgo_base = baseline.get("prob_iliquidez", 0) if baseline else 0
     frase = (f"Si decides {accion}, en {meses} meses acumularías "
              f"≈ {plan['ahorro_protegido']:.0f} € de ahorro protegido, "

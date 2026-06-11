@@ -16,8 +16,8 @@ import dash_bootstrap_components as dbc
 from config import (
     COLORES_CATEGORIA, COLOR_RIESGO, ESCALA_INTENSIDAD,
     PREFIN_INK, PREFIN_FONDO, PREFIN_SUPERFICIE, PREFIN_BORDE,
-    PREFIN_TEXTO_SEC, PREFIN_VERDE, PREFIN_ROJO, PREFIN_AMBAR, PREFIN_ACENTO,
-    PLOTLY_LAYOUT,
+    PREFIN_TEXTO_SEC, PREFIN_TEXTO_MUTED, PREFIN_VERDE, PREFIN_ROJO, PREFIN_AMBAR,
+    PREFIN_ACENTO, PLOTLY_LAYOUT,
 )
 from fuentes.loader import cargar_desde_upload, cargar_sinteticos, cargar_desde_truelayer
 from modulos.analyzer import (
@@ -425,6 +425,37 @@ def layout_datos():
 
 
 # ============================================================
+# Tabla de transacciones (diseño propio, con badges de categoría)
+# ============================================================
+def _tabla_transacciones(df, n=10):
+    filas = df.tail(n).iloc[::-1]
+    cuerpo = []
+    for _, r in filas.iterrows():
+        cat = r["categoria"]
+        col = COLORES_CATEGORIA.get(cat, PREFIN_TEXTO_SEC)
+        es_ingreso = r["importe"] >= 0
+        col_imp = PREFIN_VERDE if es_ingreso else PREFIN_ROJO
+        icono = "bi-arrow-down-left" if es_ingreso else "bi-arrow-up-right"
+        cuerpo.append(html.Tr([
+            html.Td(r["fecha"].strftime("%d/%m/%Y"), className="tx-fecha"),
+            html.Td(r["descripcion"], className="tx-desc"),
+            html.Td(html.Span([
+                html.Span(className="tx-dot", style={"backgroundColor": col}),
+                cat,
+            ], className="tx-badge", style={"backgroundColor": col + "14", "color": col})),
+            html.Td([html.I(className=f"bi {icono} me-1"), f"{r['importe']:+,.2f} €"],
+                    className="tx-importe", style={"color": col_imp}),
+        ]))
+    return html.Table([
+        html.Thead(html.Tr([
+            html.Th("Fecha"), html.Th("Descripción"),
+            html.Th("Categoría"), html.Th("Importe", style={"textAlign": "right"}),
+        ])),
+        html.Tbody(cuerpo),
+    ], className="tx-table")
+
+
+# ============================================================
 # PÁGINA: DASHBOARD
 # ============================================================
 def layout_dashboard(df):
@@ -463,11 +494,6 @@ def layout_dashboard(df):
     aplicar_layout_plotly(fig_cat)
     fig_cat.update_layout(showlegend=True,
                            legend=dict(orientation="v", y=0.5, x=1.05, font=dict(size=10)))
-
-    # --- Últimas transacciones ---
-    df_tabla = df.tail(10).iloc[::-1].copy()
-    df_tabla["fecha"] = df_tabla["fecha"].dt.strftime("%d/%m/%Y")
-    df_tabla["importe"] = df_tabla["importe"].apply(lambda x: f"{x:+,.2f} €")
 
     return dbc.Container([
         html.Div([
@@ -511,42 +537,7 @@ def layout_dashboard(df):
         dbc.Card([
             dbc.CardHeader([html.I(className="bi bi-clock-history me-2"),
                              "Últimas transacciones"]),
-            dbc.CardBody([
-                dash_table.DataTable(
-                    data=df_tabla[["fecha", "descripcion", "importe", "categoria"]].to_dict("records"),
-                    columns=[
-                        {"name": "Fecha", "id": "fecha"},
-                        {"name": "Descripción", "id": "descripcion"},
-                        {"name": "Importe", "id": "importe"},
-                        {"name": "Categoría", "id": "categoria"},
-                    ],
-                    style_table={"overflowX": "auto"},
-                    style_cell={
-                        "textAlign": "left", "padding": "10px 14px",
-                        "fontFamily": "Inter", "fontSize": "0.88rem",
-                        "border": "none",
-                        "borderBottom": f"1px solid {PREFIN_BORDE}",
-                        "color": PREFIN_INK,
-                    },
-                    style_header={
-                        "backgroundColor": "#FAFAF9",
-                        "fontWeight": "600",
-                        "color": PREFIN_TEXTO_SEC,
-                        "fontSize": "0.78rem",
-                        "textTransform": "uppercase",
-                        "letterSpacing": "0.04em",
-                        "border": "none",
-                        "borderBottom": f"1px solid {PREFIN_BORDE}",
-                    },
-                    style_data_conditional=[
-                        {"if": {"filter_query": '{importe} contains "+"', "column_id": "importe"},
-                         "color": PREFIN_VERDE, "fontWeight": "500"},
-                        {"if": {"filter_query": '{importe} contains "-"', "column_id": "importe"},
-                         "color": PREFIN_ROJO, "fontWeight": "500"},
-                    ],
-                    page_size=10,
-                ),
-            ]),
+            dbc.CardBody(_tabla_transacciones(df), style={"overflowX": "auto"}),
         ]),
     ], fluid=True, className="px-4")
 
@@ -1485,6 +1476,23 @@ PALETA_PLANES = [
 ]
 
 
+def _cajetin(label, valor, color, icono):
+    """Cajetín de estadística: caja con icono, etiqueta y valor destacado."""
+    return html.Div([
+        html.Div(html.I(className=f"bi {icono}"),
+                 style={"color": color, "fontSize": "1.1rem", "marginBottom": "2px"}),
+        html.Div(valor, style={"fontWeight": "700", "fontSize": "1.05rem",
+                               "color": color, "fontVariantNumeric": "tabular-nums",
+                               "lineHeight": "1.1"}),
+        html.Div(label, style={"color": PREFIN_TEXTO_SEC, "fontSize": "0.72rem",
+                               "marginTop": "2px"}),
+    ], style={
+        "flex": "1", "textAlign": "center", "padding": "0.6rem 0.4rem",
+        "borderRadius": "10px", "backgroundColor": "#F8FAFC",
+        "border": f"1px solid {PREFIN_BORDE}",
+    })
+
+
 def _tarjeta_plan(plan, idx, recomendado=False):
     """Tarjeta de un plan propuesto, con impacto cuantificado y color distintivo."""
     riesgo = plan["prob_iliquidez"]
@@ -1494,26 +1502,35 @@ def _tarjeta_plan(plan, idx, recomendado=False):
     encabezado = ([html.I(className="bi bi-trophy-fill me-2"), "Plan recomendado"]
                   if recomendado else
                   [html.I(className="bi bi-lightbulb me-2"), f"Alternativa {idx}"])
+    acciones = plan.get("acciones") or [plan.get("explicacion", "")]
     return dbc.Card([
         dbc.CardHeader(encabezado,
                        style={"fontWeight": "600", "backgroundColor": fondo_hdr,
                               "color": texto, "borderBottom": f"1px solid {acento}33"}),
         dbc.CardBody([
+            # Ahorro acumulado (cifra protagonista).
             html.Div(f"{plan['ahorro_protegido']:,.0f} €", style={
-                "fontSize": "1.9rem", "fontWeight": "700", "color": texto,
-                "fontVariantNumeric": "tabular-nums"}),
+                "fontSize": "2rem", "fontWeight": "700", "color": texto,
+                "fontVariantNumeric": "tabular-nums", "lineHeight": "1"}),
             html.Div("ahorro acumulado en el horizonte",
-                     style={"color": PREFIN_TEXTO_SEC, "fontSize": "0.82rem"}),
-            html.Hr(style={"margin": "0.7rem 0", "borderColor": PREFIN_BORDE}),
-            html.P(plan["explicacion"], style={"fontSize": "0.88rem"}),
+                     style={"color": PREFIN_TEXTO_SEC, "fontSize": "0.82rem",
+                            "marginBottom": "0.9rem"}),
+            # Acciones como bullet points.
+            html.Div("Tu plan", style={
+                "fontSize": "0.72rem", "fontWeight": "600", "letterSpacing": "0.05em",
+                "textTransform": "uppercase", "color": PREFIN_TEXTO_SEC,
+                "marginBottom": "0.35rem"}),
+            html.Ul([
+                html.Li(a, style={"fontSize": "0.88rem", "marginBottom": "0.25rem"})
+                for a in acciones
+            ], style={"paddingLeft": "1.15rem", "marginBottom": "0.9rem"}),
+            # Cajetines de riesgo y VaR.
             html.Div([
-                html.Span("Riesgo de iliquidez: ",
-                          style={"color": PREFIN_TEXTO_SEC, "fontSize": "0.82rem"}),
-                html.Strong(f"{riesgo:.0%}", style={"color": color_riesgo}),
-                html.Span(f"  ·  Peor caso (VaR): {plan['var_95']:,.0f} €",
-                          style={"color": PREFIN_TEXTO_SEC, "fontSize": "0.82rem",
-                                 "marginLeft": "8px"}),
-            ]),
+                _cajetin("Riesgo de iliquidez", f"{riesgo:.0%}", color_riesgo,
+                         "bi-shield-exclamation"),
+                _cajetin("Peor caso (VaR)", f"{plan['var_95']:,.0f} €",
+                         PREFIN_INK, "bi-graph-down-arrow"),
+            ], style={"display": "flex", "gap": "0.6rem"}),
         ]),
     ], className="mb-3 h-100", style={"borderLeft": f"4px solid {acento}"})
 
@@ -1600,31 +1617,37 @@ def actualizar_microahorro(unidad, store_data):
     fig_cat.update_layout(yaxis={"categoryorder": "total ascending"},
                           coloraxis_showscale=False)
 
-    # Metas
-    objetivo_items = []
+    # Metas (tarjetas con icono, estilo "marketiniano")
+    def _icono_meta(nombre):
+        n = nombre.lower()
+        if "emergencia" in n:
+            return "bi-shield-check"
+        if "vacacion" in n:
+            return "bi-airplane"
+        if "ordenador" in n or "portátil" in n:
+            return "bi-laptop"
+        if "coche" in n:
+            return "bi-car-front"
+        return "bi-bullseye"
+
+    objetivo_cols = []
     for obj in objetivos:
         meses = obj["meses"]
-        meses_txt = (f"{meses:.0f} meses" if obj["alcanzable"]
-                     and isinstance(meses, (int, float)) else "—")
-        objetivo_items.append(html.Div([
+        alcanzable = obj["alcanzable"] and isinstance(meses, (int, float))
+        if alcanzable:
+            eta = [f"{meses:.0f}", html.Small("meses")]
+        else:
+            eta = [html.I(className="bi bi-infinity"), html.Small("a este ritmo")]
+        objetivo_cols.append(dbc.Col(html.Div([
+            html.Div(html.I(className=f"bi {_icono_meta(obj['nombre'])}"),
+                     className="meta-icono"),
             html.Div([
-                html.Strong(obj["nombre"], style={"fontSize": "0.9rem"}),
-                html.Span(f"{obj['importe']:,} €",
-                          style={"color": PREFIN_TEXTO_SEC,
-                                  "fontSize": "0.85rem",
-                                  "marginLeft": "auto"}),
-            ], style={"display": "flex"}),
-            html.Div([
-                html.I(className="bi bi-clock me-1",
-                       style={"color": PREFIN_TEXTO_SEC, "fontSize": "0.75rem"}),
-                html.Span(f"Tiempo estimado: {meses_txt}",
-                          style={"color": PREFIN_TEXTO_SEC,
-                                  "fontSize": "0.8rem"}),
-            ], style={"marginTop": "4px"}),
-        ], style={
-            "padding": "11px 14px",
-            "borderBottom": f"1px solid {PREFIN_BORDE}",
-        }))
+                html.Div(obj["nombre"], className="meta-nombre"),
+                html.Div(f"{obj['importe']:,} €", className="meta-importe"),
+            ]),
+            html.Div(eta, className="meta-eta",
+                     style={"color": PREFIN_VERDE if alcanzable else PREFIN_TEXTO_MUTED}),
+        ], className="meta-card"), md=6, className="mb-3"))
 
     return html.Div([
         dbc.Row([
@@ -1652,7 +1675,7 @@ def actualizar_microahorro(unidad, store_data):
         dbc.Card([
             dbc.CardHeader([html.I(className="bi bi-bullseye me-2"),
                              "Metas alcanzables con micro-ahorro"]),
-            dbc.CardBody(objetivo_items, style={"padding": "0"}),
+            dbc.CardBody(dbc.Row(objetivo_cols)),
         ]),
     ])
 

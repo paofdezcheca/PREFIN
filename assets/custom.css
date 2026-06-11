@@ -62,15 +62,15 @@ h1, h2, h3, h4, h5, h6 {
 .prefin-navbar .navbar-brand {
   color: #FFFFFF !important;
   font-weight: 700;
-  font-size: 1.35rem;
+  font-size: 1.5rem;
   letter-spacing: -0.01em;
 }
 
 .prefin-navbar .nav-link {
   color: #CBD5E1 !important;            /* slate-300 sobre navy */
   font-weight: 500;
-  font-size: 1.02rem;                   /* opciones más grandes */
-  padding: 0.55rem 1.05rem !important;
+  font-size: 1.12rem;                   /* opciones más grandes */
+  padding: 0.55rem 1.1rem !important;
   border-radius: 8px;
   margin: 0 3px;
   transition: all 0.15s ease;
@@ -508,11 +508,11 @@ a:focus-visible, button:focus-visible, .btn:focus-visible,
 
 /* ---------- Logo en la navbar ---------- */
 .prefin-logo-img {
-  width: 30px;
-  height: 30px;
-  margin-right: 11px;
+  width: 36px;
+  height: 36px;
+  margin-right: 12px;
   display: inline-block;
-  filter: drop-shadow(0 1px 2px rgba(79,70,229,0.25));
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.35));
 }
 
 /* ---------- Encabezado de página: jerarquía display + subtítulo tenue ---------- */
@@ -536,6 +536,70 @@ a:focus-visible, button:focus-visible, .btn:focus-visible,
   border-color: rgba(99,102,241,0.20) !important;
   color: #3730A3 !important;
 }
+
+/* ---------- Tabla de transacciones (diseño propio) ---------- */
+.tx-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.tx-table thead th {
+  text-align: left;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--prefin-texto-sec);
+  padding: 0 0.9rem 0.6rem;
+  border-bottom: 1px solid var(--prefin-borde);
+}
+.tx-table tbody td {
+  padding: 0.7rem 0.9rem;
+  border-bottom: 1px solid var(--prefin-borde);
+  color: var(--prefin-ink);
+  vertical-align: middle;
+}
+.tx-table tbody tr { transition: background-color 0.12s ease; }
+.tx-table tbody tr:hover { background-color: #F1F5F9; }
+.tx-table tbody tr:last-child td { border-bottom: none; }
+.tx-fecha { color: var(--prefin-texto-sec); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tx-desc { font-weight: 500; }
+.tx-importe {
+  text-align: right; font-weight: 600; white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.tx-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 10px; border-radius: 999px;
+  font-size: 0.78rem; font-weight: 500; white-space: nowrap;
+}
+.tx-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+
+/* ---------- Metas de micro-ahorro (estilo tarjeta con icono) ---------- */
+.meta-card {
+  display: flex; align-items: center; gap: 0.9rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--prefin-borde);
+  border-radius: 12px;
+  background: var(--prefin-superficie);
+  box-shadow: var(--prefin-sombra);
+  height: 100%;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.meta-card:hover { box-shadow: var(--prefin-sombra-md); transform: translateY(-1px); }
+.meta-icono {
+  width: 46px; height: 46px; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 12px; font-size: 1.3rem;
+  background: var(--prefin-acento-suave); color: var(--prefin-acento);
+}
+.meta-nombre { font-weight: 600; font-size: 0.9rem; line-height: 1.2; }
+.meta-importe { color: var(--prefin-texto-sec); font-size: 0.8rem; font-variant-numeric: tabular-nums; }
+.meta-eta {
+  margin-left: auto; text-align: right; white-space: nowrap;
+  font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.meta-eta small { display: block; font-weight: 500; color: var(--prefin-texto-sec); font-size: 0.7rem; }
 
 /* ---------- Toast / Tooltip coherentes ---------- */
 .tooltip-inner {
