@@ -72,6 +72,10 @@ _EXPLICA = {
     "n_categorias_activas": (
         "número de categorías de gasto",
         lambda v: f"gastas en {v:.0f} categorías distintas"),
+    "colchon_meses": (
+        "colchón de liquidez",
+        lambda v: (f"tu colchón cubre {v:.1f} meses de gasto" if v >= 1
+                   else f"tu colchón apenas cubre {v*30:.0f} días de gasto")),
 }
 
 

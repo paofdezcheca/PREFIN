@@ -3,6 +3,7 @@
 
 import sys
 import os
+import re
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import pandas as pd
@@ -87,8 +88,15 @@ def aplicar_layout_plotly(fig):
     return fig
 
 
-def kpi_card(titulo, valor, icono, color=PREFIN_INK, subtitulo=""):
-    """Tarjeta KPI minimalista."""
+def kpi_card(titulo, valor, icono, color=PREFIN_INK, subtitulo="", ayuda=""):
+    """Tarjeta KPI minimalista. `ayuda` añade un icono con tooltip explicativo."""
+    label_children = [titulo]
+    extra = []
+    if ayuda:
+        tip_id = "tip-" + re.sub(r"[^a-z0-9]+", "-", titulo.lower()).strip("-")
+        label_children.append(
+            html.I(className="bi bi-info-circle help-icon", id=tip_id))
+        extra.append(dbc.Tooltip(ayuda, target=tip_id, placement="top"))
     return html.Div([
         html.Div([
             html.Div(
@@ -97,11 +105,12 @@ def kpi_card(titulo, valor, icono, color=PREFIN_INK, subtitulo=""):
                 style={"backgroundColor": f"{color}14"},  # 8% opacidad
             ),
             html.Div([
-                html.Div(titulo, className="kpi-label"),
+                html.Div(label_children, className="kpi-label"),
                 html.Div(valor, className="kpi-value"),
                 html.Div(subtitulo, className="kpi-sub") if subtitulo else html.Span(),
             ], style={"flex": "1", "marginLeft": "0.85rem"}),
         ], style={"display": "flex", "alignItems": "flex-start"}),
+        *extra,
     ], className="kpi-card")
 
 
@@ -199,11 +208,14 @@ app.layout = html.Div([
     dcc.Location(id="url", refresh=False),
     dcc.Store(id="store-df", data=None),
     NAVBAR,
-    html.Div(id="page-content", style={
-        "backgroundColor": PREFIN_FONDO,
-        "minHeight": "calc(100vh - 60px)",
-        "paddingBottom": "60px",
-    }),
+    dcc.Loading(
+        html.Div(id="page-content", style={
+            "backgroundColor": PREFIN_FONDO,
+            "minHeight": "calc(100vh - 60px)",
+            "paddingBottom": "60px",
+        }),
+        type="default", color=PREFIN_INK,
+    ),
     dbc.Toast(
         id="toast-notif",
         header="PREFIN",
@@ -244,6 +256,25 @@ def layout_datos():
             html.P("Genera datos sintéticos, sube un extracto bancario o conecta tu banco vía Open Banking.",
                    className="page-subtitle"),
         ], className="pt-4"),
+
+        # Modo demo: un clic para una demostración realista (sin banco real).
+        dbc.Alert([
+            html.Div([
+                html.Div([
+                    html.I(className="bi bi-stars me-2"),
+                    html.Strong("¿Primera vez? Prueba el modo demo."),
+                    html.Span("  Cargamos 36 meses de un usuario realista para que "
+                              "explores toda la app al instante.",
+                              style={"fontSize": "0.88rem"}),
+                ]),
+                dbc.Button([html.I(className="bi bi-play-fill me-2"),
+                            "Cargar demo"],
+                           id="btn-demo", color="primary", size="sm", n_clicks=0,
+                           className="ms-3", style={"whiteSpace": "nowrap"}),
+            ], style={"display": "flex", "alignItems": "center",
+                      "justifyContent": "space-between", "flexWrap": "wrap",
+                      "gap": "0.5rem"}),
+        ], color="light", className="mb-4"),
 
         dbc.Row([
             # --- Datos sintéticos ---
@@ -435,7 +466,10 @@ def layout_dashboard(df):
                              "bi-arrow-down-right", PREFIN_ROJO), md=3, className="mb-3"),
             dbc.Col(kpi_card("Tasa de ahorro", f"{kpis['tasa_ahorro_media']:.1f}%",
                              "bi-piggy-bank", PREFIN_AMBAR,
-                             "Recomendado: >15%"), md=3, className="mb-3"),
+                             "Recomendado: >15%",
+                             ayuda="Parte de tus ingresos que NO gastas, de media. "
+                                   "Por encima del 15% se considera saludable."),
+                    md=3, className="mb-3"),
         ]),
 
         # Banner de riesgo
@@ -727,6 +761,7 @@ def layout_riesgo(df):
         "variabilidad_gasto":    "Variabilidad del gasto",
         "tendencia_gasto":       "Tendencia de gasto",
         "n_categorias_activas":  "Nº categorías activas",
+        "colchon_meses":         "Colchón de liquidez",
     }
     if imp:
         imp_df = pd.DataFrame([
@@ -1081,7 +1116,8 @@ def layout_simulacion(df):
             ], md=3, className="mb-3"),
 
             # Resultados
-            dbc.Col([html.Div(id="div-simulacion-resultado")], md=9),
+            dbc.Col([dcc.Loading(html.Div(id="div-simulacion-resultado"),
+                                 type="default", color=PREFIN_INK)], md=9),
         ]),
     ], fluid=True, className="px-4")
 
@@ -1179,7 +1215,8 @@ def layout_ahorro(df):
                     ]),
                 ]),
             ], md=3, className="mb-3"),
-            dbc.Col(html.Div(id="div-ahorro-resultado"), md=9),
+            dbc.Col(dcc.Loading(html.Div(id="div-ahorro-resultado"),
+                                type="default", color=PREFIN_INK), md=9),
         ]),
     ], fluid=True, className="px-4")
 
@@ -1222,6 +1259,7 @@ def render_page(pathname, store_data):
     Output("toast-notif", "header"),
     Output("datos-feedback", "children"),
     Input("btn-sintetico", "n_clicks"),
+    Input("btn-demo", "n_clicks"),
     Input("btn-truelayer", "n_clicks"),
     Input("upload-data", "contents"),
     State("upload-data", "filename"),
@@ -1231,7 +1269,7 @@ def render_page(pathname, store_data):
     State("inp-mes-tl", "value"),
     prevent_initial_call=True,
 )
-def cargar_datos(n_sint, n_tl, contents, filename, meses, nomina, perfil, mes_tl):
+def cargar_datos(n_sint, n_demo, n_tl, contents, filename, meses, nomina, perfil, mes_tl):
     ctx = callback_context
     trigger = ctx.triggered[0]["prop_id"].split(".")[0] if ctx.triggered else ""
 
@@ -1240,7 +1278,12 @@ def cargar_datos(n_sint, n_tl, contents, filename, meses, nomina, perfil, mes_tl
     error = False
 
     try:
-        if trigger == "btn-sintetico":
+        if trigger == "btn-demo":
+            df = cargar_sinteticos(meses=36, ingreso_base=2000, perfil="medio",
+                                    seed=42, realista=True)
+            mensaje = f"Modo demo cargado: {len(df):,} transacciones (36 meses, datos realistas)."
+
+        elif trigger == "btn-sintetico":
             df = cargar_sinteticos(meses=meses or 12, ingreso_base=nomina or 1800,
                                     perfil=perfil or "medio", realista=True)
             mensaje = f"Datos sintéticos generados: {len(df):,} transacciones ({meses} meses, perfil {perfil})."
@@ -1362,20 +1405,34 @@ def ejecutar_simulacion(n, store_data, horizonte, cambio_ing, cambios_cat,
             dbc.Col(kpi_card("Saldo final esperado",
                              f"{mc['saldo_final_esperado']:,.0f} €",
                              "bi-wallet-fill", PREFIN_INK,
-                             "media de 5.000 escenarios"), md=3, className="mb-3"),
+                             "media de 5.000 escenarios",
+                             ayuda="Saldo medio al final del horizonte, promediando "
+                                   "las 5.000 trayectorias simuladas."),
+                    md=3, className="mb-3"),
             dbc.Col(kpi_card("Riesgo de quedarte sin dinero",
                              f"{prob_horizonte:.0%}",
                              "bi-exclamation-triangle", color_prob,
-                             "en algún mes del horizonte"), md=3, className="mb-3"),
+                             "en algún mes del horizonte",
+                             ayuda="Porcentaje de escenarios simulados en los que tu "
+                                   "saldo baja de 0 € en algún momento."),
+                    md=3, className="mb-3"),
             dbc.Col(kpi_card("Peor caso probable (VaR 95%)",
                              f"{mc['var_95']:,.0f} €",
                              "bi-graph-down-arrow", color_var,
-                             "saldo mínimo, 95% confianza"), md=3, className="mb-3"),
+                             "saldo mínimo, 95% confianza",
+                             ayuda="Value-at-Risk: en el 95% de los escenarios tu "
+                                   "saldo no baja de esta cifra. Si es negativa, "
+                                   "indica riesgo de números rojos."),
+                    md=3, className="mb-3"),
             dbc.Col(kpi_card("Caso extremo medio (CVaR)",
                              f"{mc['cvar_95']:,.0f} €",
                              "bi-arrow-down-circle",
                              PREFIN_VERDE if mc["cvar_95"] >= 0 else PREFIN_ROJO,
-                             "media del 5% peor"), md=3, className="mb-3"),
+                             "media del 5% peor",
+                             ayuda="Expected Shortfall: saldo medio en el 5% de "
+                                   "escenarios PEORES. Mide cómo de grave sería "
+                                   "el mal caso."),
+                    md=3, className="mb-3"),
         ]),
         # Cono Monte Carlo (elemento protagonista).
         dbc.Row([

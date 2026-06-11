@@ -24,6 +24,7 @@ FEATURES = [
     "variabilidad_gasto",       # desviación estándar mensual del gasto
     "tendencia_gasto",          # pendiente de la regresión (€/mes)
     "n_categorias_activas",
+    "colchon_meses",            # saldo / gasto mensual (meses de runway)
 ]
 
 
@@ -81,6 +82,22 @@ def extraer_features(df: pd.DataFrame) -> pd.DataFrame:
         "Ropa y Compras", "Educación",
     ]]
     features["n_categorias_activas"] = (merged[cat_cols] > 0).sum(axis=1)
+
+    # Colchón de liquidez: saldo al cierre del mes / gasto mensual = meses de
+    # margen. Es el factor más determinante del riesgo de iliquidez a corto plazo
+    # (un gasto alto con colchón holgado NO es peligroso). Sin esta variable, el
+    # clasificador sobreestimaba el riesgo de quienes gastan mucho pero tienen
+    # ahorro acumulado.
+    if "saldo_acumulado" in df.columns:
+        saldo_mes = (df.assign(_m=df["fecha"].dt.to_period("M").astype(str))
+                     .groupby("_m")["saldo_acumulado"].last())
+        saldo_alineado = saldo_mes.reindex(features["mes"]).values
+    else:
+        saldo_alineado = np.zeros(len(features))
+    features["colchon_meses"] = np.clip(
+        saldo_alineado / features["gasto_total"].replace(0, np.nan), 0, None
+    )
+    features["colchon_meses"] = features["colchon_meses"].fillna(0)
 
     return features
 

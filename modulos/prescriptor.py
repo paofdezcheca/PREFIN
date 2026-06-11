@@ -75,16 +75,24 @@ def _esfuerzo(plan: dict, ingreso_mensual: float) -> float:
 
 
 def evaluar_plan(df: pd.DataFrame, plan: dict, meses: int, n_sim: int,
-                 micro_cache: dict, gasto_puntual: float = 0.0,
+                 micro_cache: dict, cats_medias: dict = None,
+                 gasto_puntual: float = 0.0,
                  umbral_iliquidez: float = 0.0, seed: int = 42) -> dict:
     """Evalúa un plan con el gemelo MC y devuelve sus métricas.
 
-    El ahorro programado y el redondeo se suman como dinero apartado cada mes
-    (reduce la liquidez de la cuenta y, por tanto, sube el riesgo, que es lo que
-    la restricción controla).
+    El ahorro programado y el redondeo se apartan a una hucha (reducen la
+    liquidez de la cuenta y, por tanto, suben el riesgo, que es lo que la
+    restricción controla). Los recortes en categorías también cuentan como
+    ahorro (dinero que dejas de gastar) y, además, alivian la liquidez.
     """
     redondeo_mensual = micro_cache.get(plan["redondeo_unidad"], 0.0)
     aparta_mensual = plan["ahorro_programado"] + redondeo_mensual
+
+    # Ahorro mensual por recortes = % recortado × gasto medio de esa categoría.
+    cats_medias = cats_medias or {}
+    recorte_mensual = sum(
+        abs(pct) / 100.0 * cats_medias.get(cat, 0.0)
+        for cat, pct in plan["recortes"].items())
 
     mc = simular_montecarlo(
         df, meses=meses, n_sim=n_sim,
@@ -98,12 +106,13 @@ def evaluar_plan(df: pd.DataFrame, plan: dict, meses: int, n_sim: int,
     if not mc:
         return {}
 
-    ahorro_protegido = round(aparta_mensual * meses, 2)
+    ahorro_mensual_total = aparta_mensual + recorte_mensual
     return {
         **plan,
         "aparta_mensual": round(aparta_mensual, 2),
         "redondeo_mensual": round(redondeo_mensual, 2),
-        "ahorro_protegido": ahorro_protegido,
+        "recorte_mensual": round(recorte_mensual, 2),
+        "ahorro_protegido": round(ahorro_mensual_total * meses, 2),
         "prob_iliquidez": mc["prob_iliquidez_horizonte"],
         "var_95": mc["var_95"],
         "saldo_final_esperado": mc["saldo_final_esperado"],
@@ -135,6 +144,7 @@ def optimizar_plan(
                 "meses": meses, "n_evaluados": 0}
 
     ingreso_mensual = perfiles["ingreso"][0]
+    cats_medias = {c: v[0] for c, v in perfiles["categorias"].items()}
     micro_cache = _microahorro_por_unidad(df)
     cats = [c for c in CATEGORIAS_DISCRECIONALES if c in perfiles["categorias"]]
     rng = np.random.default_rng(seed)
@@ -143,7 +153,7 @@ def optimizar_plan(
     plan_nulo = {"ahorro_programado": 0, "redondeo_unidad": 0,
                  "recortes": {}, "mes_evento": 1}
     baseline = evaluar_plan(df, plan_nulo, meses, n_sim_refino, micro_cache,
-                            gasto_puntual, seed=seed)
+                            cats_medias, gasto_puntual, seed=seed)
 
     # --- Búsqueda aleatoria de candidatos ---
     vistos = set()
@@ -168,7 +178,7 @@ def optimizar_plan(
     evaluados = []
     for plan in candidatos:
         res = evaluar_plan(df, plan, meses, n_sim_busqueda, micro_cache,
-                           gasto_puntual, seed=seed)
+                           cats_medias, gasto_puntual, seed=seed)
         if res and res["ahorro_protegido"] > 0 and \
                 res["prob_iliquidez"] <= umbral_iliquidez_max:
             res["esfuerzo"] = _esfuerzo(plan, ingreso_mensual)
@@ -183,7 +193,7 @@ def optimizar_plan(
         plan = {k: res[k] for k in ("ahorro_programado", "redondeo_unidad",
                                     "recortes", "mes_evento")}
         ref = evaluar_plan(df, plan, meses, n_sim_refino, micro_cache,
-                           gasto_puntual, seed=seed)
+                           cats_medias, gasto_puntual, seed=seed)
         if ref and ref["prob_iliquidez"] <= umbral_iliquidez_max:
             ref["esfuerzo"] = _esfuerzo(plan, ingreso_mensual)
             ref["explicacion"] = _explicar(ref, baseline, meses)

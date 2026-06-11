@@ -91,4 +91,19 @@ PLOTLY_LAYOUT = dict(
                tickfont=dict(color=PREFIN_TEXTO_SEC)),
     title=dict(font=dict(size=15, color=PREFIN_INK), x=0.02, xanchor="left"),
     legend=dict(font=dict(size=11, color=PREFIN_INK)),
+    colorway=[PREFIN_INK, PREFIN_VERDE, PREFIN_AMBAR, PREFIN_ROJO,
+              "#3B82F6", "#8B5CF6", "#64748B"],
 )
+
+# ---------------------------------------------------------------------------
+# Tema único de Plotly compartido por TODA la app (frontend y módulos).
+# Registrarlo como plantilla por defecto garantiza una estética coherente sin
+# tener que aplicarla figura a figura.
+# ---------------------------------------------------------------------------
+try:
+    import plotly.graph_objects as _go
+    import plotly.io as _pio
+    _pio.templates["prefin"] = _go.layout.Template(layout=PLOTLY_LAYOUT)
+    _pio.templates.default = "prefin"
+except Exception:  # pragma: no cover - plotly siempre presente en runtime
+    pass
