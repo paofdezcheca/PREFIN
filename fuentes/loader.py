@@ -146,11 +146,20 @@ def _limpiar(df: pd.DataFrame) -> pd.DataFrame:
 # ---------------------------------------------------------------------------
 
 def cargar_sinteticos(meses: int = 12, ingreso_base: float = 1800.0,
-                      perfil: str = "medio", seed: int = 42) -> pd.DataFrame:
+                      perfil: str = "medio", seed: int = 42,
+                      realista: bool = False) -> pd.DataFrame:
+    """Carga un histórico sintético de un usuario.
+
+    `realista=True` activa el generador enriquecido (estacionalidad anual,
+    recibos periódicos y shocks); se usa en el modo demo de la app para que los
+    datos coincidan con la distribución sobre la que se entrena el modelo de
+    riesgo. Por defecto es False para preservar la reproducibilidad de los tests.
+    """
     from fuentes.generator import generar_transacciones
     return generar_transacciones(
         meses=meses,
         ingreso_base=ingreso_base,
         perfil_riesgo=perfil,
         seed=seed,
+        realista=realista,
     )

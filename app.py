@@ -23,7 +23,8 @@ from modulos.analyzer import (
     resumen_mensual, gasto_por_categoria_mes,
     kpis_globales, detectar_anomalias, tendencia_gasto, gasto_diario_semana,
 )
-from modulos.ml_model import ModeloRiesgo
+from modulos.riesgo_futuro import ModeloRiesgoFuturo
+from fuentes.generator import generar_multiusuario
 from modulos.forecast import PrevisorGasto, figura_prevision
 from modulos.digital_twin import (
     estado_actual, simular_escenario, resumen_simulacion,
@@ -48,7 +49,25 @@ app = dash.Dash(
     meta_tags=[{"name": "viewport", "content": "width=device-width, initial-scale=1"}],
 )
 server = app.server
-modelo = ModeloRiesgo()
+
+# Modelo de riesgo des-circularizado: se entrena UNA vez sobre una población de
+# usuarios sintéticos y luego se aplica al usuario cargado. El entrenamiento es
+# perezoso (en la primera predicción) para no ralentizar el arranque.
+modelo = ModeloRiesgoFuturo()
+_POBLACION = {"entrenada": False}
+
+
+def _asegurar_modelo():
+    """Entrena el modelo de riesgo poblacional la primera vez que se necesita."""
+    if not _POBLACION["entrenada"]:
+        try:
+            panel = generar_multiusuario(n_usuarios=40, meses=36, seed=0, realista=True)
+            modelo.entrenar(panel)
+            _POBLACION["entrenada"] = modelo._entrenado
+        except Exception:
+            pass
+    return modelo
+
 
 # Cache en memoria del servidor (no en el navegador)
 _CACHE = {"df": None}
@@ -80,6 +99,17 @@ def kpi_card(titulo, valor, icono, color=PREFIN_INK, subtitulo=""):
             ], style={"flex": "1", "marginLeft": "0.85rem"}),
         ], style={"display": "flex", "alignItems": "flex-start"}),
     ], className="kpi-card")
+
+
+def _metrica_fila(nombre, valor):
+    """Fila 'nombre … valor' para tarjetas de métricas (números tabulares)."""
+    txt = f"{valor:.2f}" if isinstance(valor, (int, float)) else "—"
+    return html.Div([
+        html.Span(nombre, style={"color": PREFIN_TEXTO_SEC, "fontSize": "0.85rem"}),
+        html.Strong(txt, style={"marginLeft": "auto",
+                                "fontVariantNumeric": "tabular-nums"}),
+    ], style={"display": "flex", "padding": "5px 0",
+              "borderBottom": f"1px solid {PREFIN_BORDE}"})
 
 
 def badge_riesgo(nivel):
@@ -340,7 +370,7 @@ def layout_dashboard(df):
         return _pantalla_sin_datos()
 
     kpis = kpis_globales(df)
-    pred = modelo.predecir(df)
+    pred = _asegurar_modelo().predecir(df)
     tend = tendencia_gasto(df)
 
     # --- Gráfica saldo ---
@@ -585,9 +615,10 @@ def layout_riesgo(df):
     if df is None or df.empty:
         return _pantalla_sin_datos()
 
-    pred = modelo.predecir(df)
+    pred = _asegurar_modelo().predecir(df)
     nivel = pred["nivel"]
     score = pred["score"]
+    met = pred.get("metricas", {})
 
     # --- Gauge ---
     fig_gauge = go.Figure(go.Indicator(
@@ -654,7 +685,8 @@ def layout_riesgo(df):
     proba = pred.get("probabilidades", {})
     proba_items = []
     for niv, pct in proba.items():
-        color_map = {"Bajo": PREFIN_VERDE, "Medio": PREFIN_AMBAR, "Alto": PREFIN_ROJO}
+        color_map = {"Bajo": PREFIN_VERDE, "Medio": PREFIN_AMBAR, "Alto": PREFIN_ROJO,
+                     "Estable": PREFIN_VERDE, "En riesgo": PREFIN_ROJO}
         color_barra = color_map.get(niv, PREFIN_TEXTO_SEC)
         proba_items.append(html.Div([
             html.Div([
@@ -693,9 +725,12 @@ def layout_riesgo(df):
             "borderBottom": f"1px solid {PREFIN_BORDE}",
         }))
 
-    # --- Gasto futuro ---
-    gasto_fut = pred.get("gasto_futuro_est")
-    gasto_fut_txt = f"{gasto_fut:,.2f} €" if gasto_fut else "—"
+    # --- Probabilidad de iliquidez (modelo vs gemelo MC) ---
+    prob_iliq = pred.get("prob_iliquidez")
+    prob_mc = pred.get("prob_iliquidez_mc")
+    ventana = pred.get("ventana", 3)
+    prob_txt = f"{prob_iliq:.0%}" if prob_iliq is not None else "—"
+    prob_mc_txt = f"{prob_mc:.0%}" if prob_mc is not None else "—"
 
     # --- Previsión de gasto con incertidumbre (Fase 1) ---
     try:
@@ -714,7 +749,9 @@ def layout_riesgo(df):
     return dbc.Container([
         html.Div([
             html.H1("Predicción de riesgo", className="page-title"),
-            html.P("Modelo Random Forest entrenado sobre tu historial financiero mensual.",
+            html.P(f"Probabilidad de quedarte sin dinero en los próximos {ventana} meses. "
+                   "Modelo entrenado sobre una población de usuarios y validado en "
+                   "usuarios nunca vistos.",
                    className="page-subtitle"),
         ], className="pt-4"),
 
@@ -744,14 +781,23 @@ def layout_riesgo(df):
                                  else "Sin datos de probabilidad"),
                 ], className="mb-3"),
                 dbc.Card([
-                    dbc.CardHeader("Gasto estimado · próximo mes"),
+                    dbc.CardHeader("Riesgo de iliquidez"),
                     dbc.CardBody([
-                        html.Div(gasto_fut_txt, style={
-                            "fontSize": "1.7rem",
-                            "fontWeight": "700",
-                            "color": PREFIN_INK,
-                            "letterSpacing": "-0.025em",
+                        html.Div(prob_txt, style={
+                            "fontSize": "1.9rem", "fontWeight": "700",
+                            "color": COLOR_RIESGO.get(nivel, PREFIN_INK),
+                            "fontVariantNumeric": "tabular-nums",
                         }),
+                        html.Small("según el modelo predictivo",
+                                   style={"color": PREFIN_TEXTO_SEC}),
+                        html.Hr(style={"margin": "0.6rem 0", "borderColor": PREFIN_BORDE}),
+                        html.Div([
+                            html.Span("Gemelo Monte Carlo: ",
+                                      style={"color": PREFIN_TEXTO_SEC, "fontSize": "0.82rem"}),
+                            html.Strong(prob_mc_txt, style={"fontVariantNumeric": "tabular-nums"}),
+                        ]),
+                        html.Small("contraste independiente",
+                                   style={"color": PREFIN_TEXTO_SEC}),
                     ]),
                 ]),
             ], md=3, className="mb-3"),
@@ -770,7 +816,28 @@ def layout_riesgo(df):
         dbc.Row([
             dbc.Col(dbc.Card(dbc.CardBody(dcc.Graph(figure=fig_imp,
                                                     config={"displayModeBar": False}))),
-                    md=12),
+                    md=8),
+            dbc.Col(dbc.Card([
+                dbc.CardHeader("Calidad del modelo (validación honesta)"),
+                dbc.CardBody([
+                    html.P("Evaluado en usuarios nunca vistos durante el "
+                           "entrenamiento (sin fuga de datos).",
+                           style={"color": PREFIN_TEXTO_SEC, "fontSize": "0.8rem"}),
+                    html.Div([
+                        _metrica_fila("ROC-AUC", met.get("roc_auc")),
+                        _metrica_fila("Exactitud", met.get("accuracy")),
+                        _metrica_fila("Sensibilidad (recall)", met.get("recall")),
+                        _metrica_fila("Precisión", met.get("precision")),
+                    ]) if met else html.Span("Modelo no entrenado.",
+                                              style={"color": PREFIN_TEXTO_SEC}),
+                    html.Hr(style={"margin": "0.6rem 0", "borderColor": PREFIN_BORDE}),
+                    html.Small(
+                        f"{met.get('n_usuarios', 0)} usuarios · "
+                        f"{met.get('n_total', 0)} muestras · "
+                        f"{met.get('tasa_positivos', 0):.0%} en riesgo",
+                        style={"color": PREFIN_TEXTO_SEC}),
+                ]),
+            ]), md=4),
         ]),
 
         # --- Previsión de gasto con incertidumbre (Fase 1) ---
@@ -1064,7 +1131,7 @@ def cargar_datos(n_sint, n_tl, contents, filename, meses, nomina, perfil, mes_tl
     try:
         if trigger == "btn-sintetico":
             df = cargar_sinteticos(meses=meses or 12, ingreso_base=nomina or 1800,
-                                    perfil=perfil or "medio")
+                                    perfil=perfil or "medio", realista=True)
             mensaje = f"Datos sintéticos generados: {len(df):,} transacciones ({meses} meses, perfil {perfil})."
 
         elif trigger == "upload-data" and contents:
@@ -1080,10 +1147,8 @@ def cargar_datos(n_sint, n_tl, contents, filename, meses, nomina, perfil, mes_tl
         mensaje = f"Error al cargar datos: {str(e)}"
 
     if df is not None and not error:
-        try:
-            modelo.entrenar(df)
-        except Exception:
-            pass
+        # El modelo de riesgo es poblacional (entrenado una sola vez de forma
+        # perezosa); no se reentrena con cada carga de un usuario.
         _CACHE["df"] = df
         feedback = dbc.Alert([html.I(className="bi bi-check-circle me-2"), mensaje],
                               color="success")
