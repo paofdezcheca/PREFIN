@@ -14,9 +14,9 @@ from dash import dcc, html, Input, Output, State, callback_context, dash_table
 import dash_bootstrap_components as dbc
 
 from config import (
-    COLORES_CATEGORIA, COLOR_RIESGO,
+    COLORES_CATEGORIA, COLOR_RIESGO, ESCALA_INTENSIDAD,
     PREFIN_INK, PREFIN_FONDO, PREFIN_SUPERFICIE, PREFIN_BORDE,
-    PREFIN_TEXTO_SEC, PREFIN_VERDE, PREFIN_ROJO, PREFIN_AMBAR,
+    PREFIN_TEXTO_SEC, PREFIN_VERDE, PREFIN_ROJO, PREFIN_AMBAR, PREFIN_ACENTO,
     PLOTLY_LAYOUT,
 )
 from fuentes.loader import cargar_desde_upload, cargar_sinteticos, cargar_desde_truelayer
@@ -54,6 +54,22 @@ app = dash.Dash(
     meta_tags=[{"name": "viewport", "content": "width=device-width, initial-scale=1"}],
 )
 server = app.server
+
+# Favicon SVG (el propio logo) + meta, preservando los marcadores de Dash.
+app.index_string = """<!DOCTYPE html>
+<html>
+    <head>
+        {%metas%}
+        <title>{%title%}</title>
+        <link rel="icon" type="image/svg+xml" href="/assets/logo.svg">
+        {%favicon%}
+        {%css%}
+    </head>
+    <body>
+        {%app_entry%}
+        <footer>{%config%}{%scripts%}{%renderer%}</footer>
+    </body>
+</html>"""
 
 # Modelo de riesgo des-circularizado: se entrena UNA vez sobre una población de
 # usuarios sintéticos y luego se aplica al usuario cargado. El entrenamiento es
@@ -175,8 +191,9 @@ NAVBAR = dbc.Navbar(
     dbc.Container([
         html.A(
             html.Div([
-                html.Div("P", className="prefin-logo"),
-                html.Span("PREFIN", className="navbar-brand mb-0"),
+                html.Img(src="/assets/logo.svg", className="prefin-logo-img",
+                         alt="Logo PREFIN"),
+                html.Span("PREFIN", className="navbar-brand mb-0 prefin-brand-display"),
             ], style={"display": "flex", "alignItems": "center"}),
             href="/", style={"textDecoration": "none"},
         ),
@@ -234,14 +251,17 @@ app.layout = html.Div([
 def _pantalla_sin_datos():
     return dbc.Container([
         html.Div([
-            html.I(className="bi bi-database-slash",
-                   style={"fontSize": "3rem", "color": PREFIN_TEXTO_SEC}),
-            html.H4("Sin datos cargados", className="mt-3",
+            html.Div(html.I(className="bi bi-bar-chart-line"),
+                     className="estado-vacio-icono"),
+            html.H4("Empieza cargando tus datos", className="mt-4",
                     style={"color": PREFIN_INK}),
-            html.P("Ve a la sección Datos para cargar transacciones o generar un conjunto de prueba.",
-                   style={"color": PREFIN_TEXTO_SEC, "fontSize": "0.95rem"}),
+            html.P("Genera un conjunto realista en un clic, sube tu extracto o "
+                   "conecta tu banco. Después podrás explorar previsiones, riesgo "
+                   "y tu plan de ahorro.",
+                   style={"color": PREFIN_TEXTO_SEC, "fontSize": "0.95rem",
+                          "maxWidth": "440px", "margin": "0.5rem auto 0"}),
             dbc.Button([html.I(className="bi bi-arrow-right me-2"), "Ir a Datos"],
-                       href="/datos", color="primary", className="mt-2"),
+                       href="/datos", color="primary", className="mt-3"),
         ], className="text-center", style={"padding": "5rem 1rem"}),
     ], fluid=True, className="px-4")
 
@@ -771,10 +791,12 @@ def layout_riesgo(df):
         fig_imp = px.bar(
             imp_df, x="importancia", y="feature", orientation="h",
             title="Importancia de variables · Random Forest",
-            color_discrete_sequence=[PREFIN_INK],
+            labels={"importancia": "Importancia relativa", "feature": ""},
+            color="importancia", color_continuous_scale=ESCALA_INTENSIDAD,
         )
         aplicar_layout_plotly(fig_imp)
-        fig_imp.update_layout(yaxis={"categoryorder": "total ascending"})
+        fig_imp.update_layout(yaxis={"categoryorder": "total ascending"},
+                              coloraxis_showscale=False)
     else:
         fig_imp = go.Figure()
         fig_imp.add_annotation(text="Datos insuficientes",
@@ -1438,7 +1460,8 @@ def ejecutar_simulacion(n, store_data, horizonte, cambio_ing, cambios_cat,
         dbc.Row([
             dbc.Col(dbc.Card(dbc.CardBody(dcc.Graph(
                 figure=fig_cono, config={"displayModeBar": False},
-                style={"height": "440px"}))), md=8, className="mb-3"),
+                style={"height": "440px"})), className="cono-card"),
+                md=8, className="mb-3"),
             dbc.Col(dbc.Card(dbc.CardBody(dcc.Graph(
                 figure=fig_iliq, config={"displayModeBar": False},
                 style={"height": "440px"}))), md=4, className="mb-3"),
@@ -1557,10 +1580,11 @@ def actualizar_microahorro(unidad, store_data):
         por_cat, x="total", y="categoria", orientation="h",
         title="Potencial de ahorro por categoría",
         labels={"total": "Ahorro (€)", "categoria": ""},
-        color_discrete_sequence=[PREFIN_INK],
+        color="total", color_continuous_scale=ESCALA_INTENSIDAD,
     )
     aplicar_layout_plotly(fig_cat)
-    fig_cat.update_layout(yaxis={"categoryorder": "total ascending"})
+    fig_cat.update_layout(yaxis={"categoryorder": "total ascending"},
+                          coloraxis_showscale=False)
 
     # Metas
     objetivo_items = []

@@ -4,18 +4,27 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap');
 
-/* ---------- Variables ---------- */
+/* ---------- Variables: sistema por capas (slate frío + acento índigo) ---------- */
 :root {
   --prefin-ink:       #0F172A;
-  --prefin-fondo:     #FAFAF9;
-  --prefin-superficie:#FFFFFF;
-  --prefin-borde:     #E7E5E4;
-  --prefin-borde-fuerte: #D4D4D8;
-  --prefin-texto-sec: #71717A;
-  --prefin-texto-muted: #A1A1AA;
+  --prefin-fondo:     #F8FAFC;   /* base */
+  --prefin-superficie:#FFFFFF;   /* tarjetas */
+  --prefin-elev:      #FFFFFF;   /* superficie elevada (se distingue por sombra) */
+  --prefin-borde:     #E2E8F0;
+  --prefin-borde-fuerte: #CBD5E1;
+  --prefin-texto-sec: #64748B;
+  --prefin-texto-muted: #94A3B8;
   --prefin-verde:     #16A34A;
   --prefin-rojo:      #DC2626;
   --prefin-ambar:     #D97706;
+  /* Acento de marca / interacción (no semántico) */
+  --prefin-acento:    #6366F1;
+  --prefin-acento-osc:#4F46E5;
+  --prefin-acento-suave: #EEF2FF;
+  /* Elevación: sombras suaves de baja opacidad → jerarquía de planos */
+  --prefin-sombra:     0 1px 2px rgba(15,23,42,0.04), 0 2px 6px rgba(15,23,42,0.04);
+  --prefin-sombra-md:  0 2px 4px rgba(15,23,42,0.05), 0 8px 24px rgba(15,23,42,0.07);
+  --prefin-sombra-lg:  0 4px 10px rgba(15,23,42,0.06), 0 16px 40px rgba(15,23,42,0.10);
 }
 
 /* ---------- Reset y tipografía ---------- */
@@ -38,18 +47,21 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--prefin-texto-sec) !important;
 }
 
-/* ---------- Navbar ---------- */
+/* ---------- Navbar (más cuerpo + gradiente muy sutil) ---------- */
 .prefin-navbar {
-  background-color: var(--prefin-superficie) !important;
+  background: linear-gradient(180deg, #FFFFFF 0%, #FBFCFE 100%) !important;
   border-bottom: 1px solid var(--prefin-borde);
-  padding: 0.75rem 0;
-  box-shadow: none !important;
+  padding: 0.95rem 0;
+  box-shadow: var(--prefin-sombra) !important;
+  position: sticky;
+  top: 0;
+  z-index: 1020;
 }
 
 .prefin-navbar .navbar-brand {
   color: var(--prefin-ink) !important;
   font-weight: 700;
-  font-size: 1.15rem;
+  font-size: 1.2rem;
   letter-spacing: -0.02em;
 }
 
@@ -57,34 +69,36 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--prefin-texto-sec) !important;
   font-weight: 500;
   font-size: 0.9rem;
-  padding: 0.5rem 0.9rem !important;
-  border-radius: 6px;
-  margin: 0 2px;
+  padding: 0.55rem 0.95rem !important;
+  border-radius: 8px;
+  margin: 0 3px;
   transition: all 0.15s ease;
 }
 
 .prefin-navbar .nav-link:hover {
   color: var(--prefin-ink) !important;
-  background-color: #F4F4F5;
+  background-color: #F1F5F9;
 }
 
 .prefin-navbar .nav-link.active {
-  color: var(--prefin-ink) !important;
-  background-color: #F4F4F5;
+  color: var(--prefin-acento-osc) !important;
+  background-color: var(--prefin-acento-suave);
   font-weight: 600;
+  box-shadow: inset 0 0 0 1px rgba(99,102,241,0.18);
 }
 
 /* ---------- Tarjetas ---------- */
 .card {
   background-color: var(--prefin-superficie) !important;
   border: 1px solid var(--prefin-borde) !important;
-  border-radius: 12px !important;
-  box-shadow: none !important;
-  transition: border-color 0.2s ease;
+  border-radius: 14px !important;
+  box-shadow: var(--prefin-sombra) !important;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 }
 
 .card:hover {
   border-color: var(--prefin-borde-fuerte) !important;
+  box-shadow: var(--prefin-sombra-md) !important;
 }
 
 .card-header {
@@ -104,14 +118,17 @@ h1, h2, h3, h4, h5, h6 {
 .kpi-card {
   background-color: var(--prefin-superficie);
   border: 1px solid var(--prefin-borde);
-  border-radius: 12px;
-  padding: 1.1rem 1.25rem;
+  border-radius: 14px;
+  padding: 1.2rem 1.35rem;
   height: 100%;
-  transition: border-color 0.2s ease;
+  box-shadow: var(--prefin-sombra);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 }
 
 .kpi-card:hover {
   border-color: var(--prefin-borde-fuerte);
+  box-shadow: var(--prefin-sombra-md);
+  transform: translateY(-1px);
 }
 
 .kpi-label {
@@ -160,14 +177,16 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .btn-primary {
-  background-color: var(--prefin-ink) !important;
-  border-color: var(--prefin-ink) !important;
+  background-color: var(--prefin-acento) !important;
+  border-color: var(--prefin-acento) !important;
   color: white !important;
+  box-shadow: 0 1px 2px rgba(79,70,229,0.20);
 }
 
 .btn-primary:hover {
-  background-color: #1E293B !important;
-  border-color: #1E293B !important;
+  background-color: var(--prefin-acento-osc) !important;
+  border-color: var(--prefin-acento-osc) !important;
+  box-shadow: 0 4px 12px rgba(79,70,229,0.28);
 }
 
 .btn-secondary {
@@ -201,8 +220,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .form-control:focus, .form-select:focus {
-  border-color: var(--prefin-ink) !important;
-  box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08) !important;
+  border-color: var(--prefin-acento) !important;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15) !important;
 }
 
 .form-label {
@@ -307,19 +326,21 @@ h1, h2, h3, h4, h5, h6 {
   margin-bottom: 0;
 }
 
-/* ---------- Slider ---------- */
+/* ---------- Slider (acento índigo) ---------- */
 .rc-slider-track {
-  background-color: var(--prefin-ink) !important;
+  background-color: var(--prefin-acento) !important;
 }
 
 .rc-slider-handle {
-  border-color: var(--prefin-ink) !important;
+  border-color: var(--prefin-acento) !important;
   background-color: var(--prefin-superficie) !important;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+  box-shadow: 0 1px 3px rgba(79,70,229,0.25) !important;
 }
 
-.rc-slider-handle:hover {
-  border-color: var(--prefin-ink) !important;
+.rc-slider-handle:hover,
+.rc-slider-handle:active {
+  border-color: var(--prefin-acento-osc) !important;
+  box-shadow: 0 0 0 5px rgba(99,102,241,0.15) !important;
 }
 
 .rc-slider-rail {
@@ -328,8 +349,12 @@ h1, h2, h3, h4, h5, h6 {
 
 /* ---------- RadioItems / Checklist ---------- */
 .form-check-input:checked {
-  background-color: var(--prefin-ink) !important;
-  border-color: var(--prefin-ink) !important;
+  background-color: var(--prefin-acento) !important;
+  border-color: var(--prefin-acento) !important;
+}
+.form-check-input:focus {
+  border-color: var(--prefin-acento) !important;
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.15) !important;
 }
 
 .form-check-label {
@@ -420,7 +445,7 @@ a:focus-visible, button:focus-visible, .btn:focus-visible,
 .nav-link:focus-visible, .form-control:focus-visible,
 .form-select:focus-visible, input:focus-visible,
 .rc-slider-handle:focus-visible, [tabindex]:focus-visible {
-  outline: 2px solid var(--prefin-ink) !important;
+  outline: 2px solid var(--prefin-acento) !important;
   outline-offset: 2px !important;
   border-radius: 4px;
 }
@@ -464,4 +489,52 @@ a:focus-visible, button:focus-visible, .btn:focus-visible,
 /* ---------- Estado de carga (dcc.Loading) más sobrio ---------- */
 ._dash-loading-callback, ._dash-loading {
   color: var(--prefin-texto-sec);
+}
+
+/* ---------- Profundidad: tarjeta firma del cono Monte Carlo ---------- */
+.card.cono-card {
+  background:
+    radial-gradient(120% 90% at 100% 0%, rgba(99,102,241,0.07) 0%, rgba(99,102,241,0) 55%),
+    linear-gradient(180deg, #FFFFFF 0%, #FBFCFE 100%) !important;
+  box-shadow: var(--prefin-sombra-md) !important;
+}
+
+/* ---------- Logo en la navbar ---------- */
+.prefin-logo-img {
+  width: 30px;
+  height: 30px;
+  margin-right: 11px;
+  display: inline-block;
+  filter: drop-shadow(0 1px 2px rgba(79,70,229,0.25));
+}
+
+/* ---------- Encabezado de página: jerarquía display + subtítulo tenue ---------- */
+.page-title { color: var(--prefin-ink); }
+.page-subtitle { color: var(--prefin-texto-sec); }
+
+/* ---------- Estado vacío con acento de marca ---------- */
+.estado-vacio-icono {
+  width: 76px; height: 76px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 20px;
+  background: var(--prefin-acento-suave);
+  color: var(--prefin-acento);
+  font-size: 2.1rem;
+  box-shadow: var(--prefin-sombra);
+}
+
+/* ---------- Alertas: acento índigo para 'info/light' de marca ---------- */
+.alert-light {
+  background-color: var(--prefin-acento-suave) !important;
+  border-color: rgba(99,102,241,0.20) !important;
+  color: #3730A3 !important;
+}
+
+/* ---------- Toast / Tooltip coherentes ---------- */
+.tooltip-inner {
+  background-color: var(--prefin-ink) !important;
+  font-size: 0.8rem !important;
+  border-radius: 8px !important;
+  padding: 0.45rem 0.7rem !important;
+  box-shadow: var(--prefin-sombra-md);
 }

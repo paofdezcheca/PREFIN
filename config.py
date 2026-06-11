@@ -19,20 +19,27 @@ CATEGORIAS = [
 ]
 
 # ---------------------------------------------------------------------------
-# Paleta principal — minimalista
+# Paleta principal — sistema por CAPAS (base fría slate + acento índigo)
+# El significado del color semántico (verde/ámbar/rojo) NO cambia.
 # ---------------------------------------------------------------------------
-PREFIN_INK       = "#0F172A"   # Casi negro azulado (texto principal, acentos)
-PREFIN_ACENTO    = "#0F172A"   # Color de marca
-PREFIN_FONDO     = "#FAFAF9"   # Fondo general (blanco roto cálido)
-PREFIN_SUPERFICIE= "#FFFFFF"   # Tarjetas
-PREFIN_BORDE     = "#E7E5E4"   # Bordes sutiles
-PREFIN_TEXTO_SEC = "#71717A"   # Texto secundario
-PREFIN_TEXTO_MUTED = "#A1A1AA" # Texto muy tenue
+PREFIN_INK         = "#0F172A"   # Texto principal (slate-900)
+PREFIN_FONDO       = "#F8FAFC"   # Fondo base (slate-50, no blanco puro)
+PREFIN_SUPERFICIE  = "#FFFFFF"   # Tarjetas (un plano por encima del fondo)
+PREFIN_SUPERFICIE_ELEV = "#FFFFFF"  # Superficie elevada (se distingue por sombra)
+PREFIN_BORDE       = "#E2E8F0"   # Bordes sutiles (slate-200)
+PREFIN_BORDE_FUERTE = "#CBD5E1"  # Bordes con más presencia (slate-300)
+PREFIN_TEXTO_SEC   = "#64748B"   # Texto secundario (slate-500)
+PREFIN_TEXTO_MUTED = "#94A3B8"   # Texto muy tenue (slate-400)
+
+# Acento de marca / interacción (índigo), distinto de los semánticos.
+PREFIN_ACENTO      = "#6366F1"   # Índigo-500 (marca, elementos interactivos)
+PREFIN_ACENTO_OSC  = "#4F46E5"   # Índigo-600 (hover / activo)
+PREFIN_ACENTO_SUAVE = "#EEF2FF"  # Índigo-50 (fondos de estado activo)
 
 # Compatibilidad con código antiguo
 PREFIN_AZUL    = PREFIN_INK
 PREFIN_BLANCO  = PREFIN_SUPERFICIE
-PREFIN_GRIS    = "#F4F4F5"
+PREFIN_GRIS    = "#F1F5F9"
 
 # ---------------------------------------------------------------------------
 # Colores semánticos (estado financiero)
@@ -85,15 +92,21 @@ PLOTLY_LAYOUT = dict(
     font=dict(family="Inter, -apple-system, BlinkMacSystemFont, sans-serif",
               size=12, color=PREFIN_INK),
     margin=dict(t=50, b=40, l=50, r=30),
-    xaxis=dict(showgrid=False, linecolor=PREFIN_BORDE,
+    xaxis=dict(showgrid=False, linecolor=PREFIN_BORDE, automargin=True,
                tickfont=dict(color=PREFIN_TEXTO_SEC)),
     yaxis=dict(showgrid=True, gridcolor=PREFIN_BORDE, linecolor=PREFIN_BORDE,
+               automargin=True, zeroline=False,
                tickfont=dict(color=PREFIN_TEXTO_SEC)),
     title=dict(font=dict(size=15, color=PREFIN_INK), x=0.02, xanchor="left"),
     legend=dict(font=dict(size=11, color=PREFIN_INK)),
-    colorway=[PREFIN_INK, PREFIN_VERDE, PREFIN_AMBAR, PREFIN_ROJO,
-              "#3B82F6", "#8B5CF6", "#64748B"],
+    colorway=[PREFIN_ACENTO, PREFIN_INK, PREFIN_VERDE, PREFIN_AMBAR, PREFIN_ROJO,
+              "#8B5CF6", "#64748B"],
 )
+
+# Escala secuencial de marca (índigo) para rankings con gradación de intensidad.
+ESCALA_INTENSIDAD = [
+    [0.0, "#E0E7FF"], [0.5, "#818CF8"], [1.0, PREFIN_ACENTO_OSC],
+]
 
 # ---------------------------------------------------------------------------
 # Tema único de Plotly compartido por TODA la app (frontend y módulos).
