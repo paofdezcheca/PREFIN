@@ -27,6 +27,9 @@ from modulos.riesgo_futuro import ModeloRiesgoFuturo
 from fuentes.generator import generar_multiusuario
 from modulos.forecast import PrevisorGasto, figura_prevision
 from modulos.explicador import explicar_natural, figura_contribuciones
+from modulos.deteccion import (
+    detectar_cambios_regimen, figura_cambios_regimen, comparar_detectores,
+)
 from modulos.digital_twin import (
     estado_actual, simular_escenario, resumen_simulacion,
     simular_montecarlo, figura_cono_montecarlo,
@@ -104,7 +107,14 @@ def kpi_card(titulo, valor, icono, color=PREFIN_INK, subtitulo=""):
 
 def _metrica_fila(nombre, valor):
     """Fila 'nombre … valor' para tarjetas de métricas (números tabulares)."""
-    txt = f"{valor:.2f}" if isinstance(valor, (int, float)) else "—"
+    if isinstance(valor, bool) or valor is None:
+        txt = "—"
+    elif isinstance(valor, int):
+        txt = f"{valor:,}"
+    elif isinstance(valor, float):
+        txt = f"{valor:.2f}"
+    else:
+        txt = "—"
     return html.Div([
         html.Span(nombre, style={"color": PREFIN_TEXTO_SEC, "fontSize": "0.85rem"}),
         html.Strong(txt, style={"marginLeft": "auto",
@@ -499,6 +509,11 @@ def layout_analisis(df):
     anomalias_df = detectar_anomalias(df)
     diario = gasto_diario_semana(df)
 
+    # Prevención (Fase 4): cambios de régimen y comparación de detectores.
+    cambios_reg = detectar_cambios_regimen(df)
+    fig_regimen = figura_cambios_regimen(df)
+    comp_det = comparar_detectores(df)
+
     # --- Evolución gasto por categoría (apilado) ---
     cats_long = cats_mes.melt(id_vars="mes", var_name="categoria", value_name="gasto")
     cats_long = cats_long[cats_long["gasto"] > 0]
@@ -561,6 +576,47 @@ def layout_analisis(df):
             dbc.Col(dbc.Card(dbc.CardBody(dcc.Graph(figure=fig_dia,
                                                     config={"displayModeBar": False}))),
                     md=4, className="mb-3"),
+        ]),
+
+        # --- Prevención: cambios de régimen (Fase 4) ---
+        dbc.Row([
+            dbc.Col(dbc.Card([
+                dbc.CardHeader([html.I(className="bi bi-activity me-2"),
+                                 "Cambios de régimen en tu gasto"]),
+                dbc.CardBody([
+                    html.P("Momentos en los que tu nivel de gasto cambió de forma "
+                           "sostenida (no un pico puntual, sino un cambio que se "
+                           "mantiene).",
+                           style={"color": PREFIN_TEXTO_SEC, "fontSize": "0.85rem"}),
+                    dcc.Graph(figure=fig_regimen, config={"displayModeBar": False}),
+                    html.Div([
+                        html.Span([
+                            html.I(className=f"bi bi-arrow-{'up' if c['direccion']=='subida' else 'down'}-right me-1",
+                                   style={"color": PREFIN_ROJO if c['direccion']=='subida' else PREFIN_VERDE}),
+                            f"{c['mes']}: {c['direccion']} de "
+                            f"{c['media_antes']:,.0f} € a {c['media_despues']:,.0f} €",
+                        ], style={"display": "block", "fontSize": "0.85rem",
+                                  "marginBottom": "3px"})
+                        for _, c in cambios_reg.iterrows()
+                    ] or [html.Span("No se han detectado cambios de régimen.",
+                                    style={"color": PREFIN_TEXTO_SEC,
+                                           "fontSize": "0.85rem"})]),
+                ]),
+            ]), md=8, className="mb-3"),
+            dbc.Col(dbc.Card([
+                dbc.CardHeader([html.I(className="bi bi-search me-2"),
+                                 "Detectores de anomalías"]),
+                dbc.CardBody([
+                    html.P("Comparamos dos métodos: el z-score por categoría "
+                           "(univariante, baseline) y un IsolationForest que "
+                           "aprende tu patrón global (multivariante).",
+                           style={"color": PREFIN_TEXTO_SEC, "fontSize": "0.82rem"}),
+                    _metrica_fila("z-score (baseline)", comp_det["n_zscore"]),
+                    _metrica_fila("IsolationForest", comp_det["n_isolation"]),
+                    _metrica_fila("Coinciden", comp_det["n_comunes"]),
+                    _metrica_fila("Solo IsolationForest", comp_det["solo_isolation"]),
+                ]),
+            ]), md=4, className="mb-3"),
         ]),
 
         dbc.Card([
