@@ -27,6 +27,7 @@ tokens.db
 Thumbs.db
 .vscode/
 .idea/
+.claude/
 
 # Builds / distribución
 build/
