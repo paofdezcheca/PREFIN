@@ -30,7 +30,7 @@ PREFIN_SUPERFICIE_ELEV = "#FFFFFF"  # Superficie elevada (se distingue por sombr
 PREFIN_BORDE       = "#E2E8F0"   # Bordes sutiles (slate-200)
 PREFIN_BORDE_FUERTE = "#CBD5E1"  # Bordes con más presencia (slate-300)
 PREFIN_TEXTO_SEC   = "#64748B"   # Texto secundario (slate-500)
-PREFIN_TEXTO_MUTED = "#94A3B8"   # Texto muy tenue (slate-400)
+PREFIN_TEXTO_MUTED = "#6B7280"   # Texto tenue — mínimo 4.5:1 sobre blanco (WCAG AA)
 
 # Acento de marca / interacción (índigo), distinto de los semánticos.
 PREFIN_ACENTO      = "#6366F1"   # Índigo-500 (marca, elementos interactivos)
@@ -47,7 +47,7 @@ PREFIN_GRIS    = "#F1F5F9"
 # ---------------------------------------------------------------------------
 PREFIN_VERDE  = "#16A34A"  # positivo / ingreso / ahorro
 PREFIN_ROJO   = "#DC2626"  # negativo / gasto / riesgo alto
-PREFIN_AMBAR  = "#D97706"  # advertencia / riesgo medio
+PREFIN_AMBAR  = "#B45309"  # advertencia / riesgo medio — amber-700, 5.0:1 sobre blanco (WCAG AA)
 
 # ---------------------------------------------------------------------------
 # Colores por categoría — paleta armónica desaturada

@@ -308,15 +308,15 @@ def layout_datos():
                         html.P("Crea un histórico bancario ficticio realista para probar la plataforma.",
                                style={"color": PREFIN_TEXTO_SEC, "fontSize": "0.88rem"}),
 
-                        dbc.Label("Meses de historia"),
+                        dbc.Label("Meses de historia", html_for="sl-meses"),
                         dcc.Slider(3, 36, 3, value=12, id="sl-meses",
                                    marks={i: str(i) for i in range(3, 37, 3)}),
 
-                        dbc.Label("Nómina mensual (€)", className="mt-3"),
+                        dbc.Label("Nómina mensual (€)", html_for="inp-nomina", className="mt-3"),
                         dbc.Input(id="inp-nomina", type="number", value=1800,
                                   min=800, max=6000, step=50),
 
-                        dbc.Label("Perfil de gasto", className="mt-3"),
+                        dbc.Label("Perfil de gasto", html_for="radio-perfil", className="mt-3"),
                         dbc.RadioItems(
                             id="radio-perfil",
                             options=[
@@ -364,7 +364,8 @@ def layout_datos():
                                          style={"color": PREFIN_TEXTO_SEC,
                                                 "fontSize": "0.88rem",
                                                 "marginTop": "8px"}),
-                            ]),
+                            ], role="button", tabIndex=0,
+                               **{"aria-label": "Subir extracto bancario CSV o Excel"}),
                             className="upload-area",
                             style={
                                 "width": "100%", "height": "140px",
@@ -397,7 +398,7 @@ def layout_datos():
                             "Requiere backend FastAPI en localhost:8000.",
                         ], color="info", className="small"),
 
-                        dbc.Label("Mes a consultar (YYYY-MM)"),
+                        dbc.Label("Mes a consultar (YYYY-MM)", html_for="inp-mes-tl"),
                         dbc.Input(id="inp-mes-tl", type="text",
                                   placeholder="2026-01", value=""),
 
@@ -1057,7 +1058,7 @@ def layout_simulacion(df):
                     dbc.CardHeader([html.I(className="bi bi-sliders me-2"),
                                      "Configurar escenario"]),
                     dbc.CardBody([
-                        dbc.Label("Horizonte (meses)"),
+                        dbc.Label("Horizonte (meses)", html_for="sl-horizonte"),
                         dcc.Slider(1, 36, 1, value=12, id="sl-horizonte",
                                    marks={6: "6", 12: "12", 24: "24", 36: "36"},
                                    tooltip={"always_visible": False}),
@@ -1065,7 +1066,7 @@ def layout_simulacion(df):
                         html.Hr(style={"borderColor": PREFIN_BORDE,
                                         "margin": "1rem 0"}),
 
-                        dbc.Label("Cambio en ingresos (%)"),
+                        dbc.Label("Cambio en ingresos (%)", html_for="sl-ingreso"),
                         dcc.Slider(-30, 50, 5, value=0, id="sl-ingreso",
                                    marks={-30: "-30%", 0: "0%", 25: "+25%",
                                            50: "+50%"},
@@ -1074,7 +1075,7 @@ def layout_simulacion(df):
                         html.Hr(style={"borderColor": PREFIN_BORDE,
                                         "margin": "1rem 0"}),
 
-                        dbc.Label("Ajuste por categoría"),
+                        dbc.Label("Ajuste por categoría", html_for="sel-cat-sim"),
                         html.P("Elige una categoría y un % de cambio.",
                                style={"color": PREFIN_TEXTO_SEC,
                                       "fontSize": "0.78rem"}),
@@ -1100,12 +1101,12 @@ def layout_simulacion(df):
                         html.Hr(style={"borderColor": PREFIN_BORDE,
                                         "margin": "1rem 0"}),
 
-                        dbc.Label("Gasto imprevisto en mes 1 (€)"),
+                        dbc.Label("Gasto imprevisto en mes 1 (€)", html_for="inp-imprevisto"),
                         dbc.Input(id="inp-imprevisto", type="number",
                                   value=0, min=0, step=50),
 
                         dbc.Label("Meta de ahorro mensual (€)",
-                                  className="mt-3"),
+                                  html_for="inp-meta-ahorro", className="mt-3"),
                         dbc.Input(id="inp-meta-ahorro", type="number",
                                   value=0, min=0, step=50),
                         html.Small("0 = sin meta",
@@ -1150,11 +1151,11 @@ def layout_plan(df):
                     dbc.CardHeader([html.I(className="bi bi-sliders me-2"),
                                      "Tus preferencias"]),
                     dbc.CardBody([
-                        dbc.Label("Horizonte (meses)"),
+                        dbc.Label("Horizonte (meses)", html_for="pl-horizonte"),
                         dcc.Slider(6, 24, 6, value=12, id="pl-horizonte",
                                    marks={6: "6", 12: "12", 18: "18", 24: "24"}),
 
-                        dbc.Label("Riesgo máximo que aceptas", className="mt-3"),
+                        dbc.Label("Riesgo máximo que aceptas", html_for="pl-umbral", className="mt-3"),
                         html.P("Probabilidad de quedarte sin dinero que estás "
                                "dispuesto a tolerar.",
                                style={"color": PREFIN_TEXTO_SEC, "fontSize": "0.78rem"}),
@@ -1163,7 +1164,7 @@ def layout_plan(df):
                                           0.30: "30%"}),
 
                         dbc.Label("¿Tienes un gasto puntual previsto? (€)",
-                                  className="mt-3"),
+                                  html_for="pl-gasto", className="mt-3"),
                         dbc.Input(id="pl-gasto", type="number", value=0,
                                   min=0, step=100),
                         html.Small("0 = ninguno. Si lo indicas, el plan elige el "

@@ -34,3 +34,6 @@ build/
 dist/
 *.egg-info/
 .eggs/
+
+# Resultados de benchmarks (datos específicos de cada máquina)
+.benchmarks/
