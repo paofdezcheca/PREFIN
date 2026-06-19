@@ -59,6 +59,14 @@ _MIN_MESES_MODELO = 6
 # sobre todo, la varianza cuando hay pocos datos y estacionalidad anual.
 _PESO_MODELO = 0.5
 
+# Calibración conforme dividida (split conformal / CQR).
+# Se reserva una fracción de la serie como conjunto de calibración: nunca se usa
+# para entrenar el modelo cuantílico. El ajuste q_hat expande el intervalo p10–p90
+# hasta alcanzar la cobertura nominal del 80 % sobre datos no vistos.
+_N_CAL_MIN = 8      # puntos mínimos para el conjunto de calibración
+_N_CAL_FRAC = 0.20  # fracción de la serie reservada para calibración
+_ALPHA = 0.20       # nivel de error (cobertura objetivo = 1 − α = 80 %)
+
 # Parámetros de detección de flujos recurrentes. Criterio conservador: preferimos
 # perder algún recurrente (que se quedará en el gasto variable y aún se prevé con
 # incertidumbre) antes que confundir gasto discrecional con un compromiso fijo.
@@ -232,6 +240,9 @@ class PrevisorGasto:
         self._modelo_med: QuantileRegressor | None = None
         self._res_q: dict[float, float] = {}      # cuantil -> desviación de residuo
         self._fallback: dict[float, float] | None = None
+        self._q_hat: float = 0.0                  # corrección conforme
+        self.n_cal_: int = 0
+        self.usa_conformal_: bool = False
         self.recurrentes_: pd.DataFrame | None = None
         self.serie_total_: pd.Series | None = None
         self.gasto_recurrente_: float = 0.0
@@ -259,19 +270,52 @@ class PrevisorGasto:
             self.usa_modelo_ = False
             return self
 
-        X, y_train = self._construir_features(serie)
+        # Partición temporal: training + calibración conforme.
+        # La calibración se toma de los ÚLTIMOS meses (respeta el orden temporal).
+        n_full = len(y)
+        n_cal = max(_N_CAL_MIN, int(n_full * _N_CAL_FRAC))
+        n_train = n_full - n_cal
+        if n_train - 1 < _MIN_MESES_MODELO:   # sin margen → usa todo, sin conformal
+            n_train = n_full
+            n_cal = 0
+
+        X_all = self._matriz_features(serie)        # (n_full, 4)
+        naive_all = self._naive_estacional(serie)   # (n_full,)
+
+        X_tr = X_all[1:n_train]   # (n_train-1, 4)  — fila 0 descartada (no hay lag)
+        y_tr = y[1:n_train]       # (n_train-1,)
+
         self._modelo_med = QuantileRegressor(quantile=0.5, alpha=0.001, solver="highs")
-        self._modelo_med.fit(X, y_train)
+        self._modelo_med.fit(X_tr, y_tr)
 
-        # Predicción en muestra = combinación del modelo con el seasonal-naive.
-        naive = self._naive_estacional(serie)[1:]  # alineado con y_train (filas 1..n-1)
-        blend = _PESO_MODELO * self._modelo_med.predict(X) + (1 - _PESO_MODELO) * naive
-
-        # Intervalo por cuantiles empíricos de los residuos de la combinación.
-        # Calibra la banda mejor que tres regresiones cuantílicas independientes
-        # con pocos datos; la calibración formal (conformal) se trata en Fase 6.
-        residuos = y_train - blend
+        # Residuos sobre el conjunto de entrenamiento → anchura inicial de la banda.
+        naive_tr = naive_all[1:n_train]
+        blend_tr = _PESO_MODELO * self._modelo_med.predict(X_tr) + (1 - _PESO_MODELO) * naive_tr
+        residuos = y_tr - blend_tr
         self._res_q = {q: float(np.quantile(residuos, q)) for q in self.cuantiles}
+
+        # Calibración conforme dividida (CQR): calcula la corrección q_hat sobre
+        # datos nunca vistos por el modelo, de modo que la cobertura real del
+        # intervalo [p10 - q_hat, p90 + q_hat] alcance la cobertura nominal (80 %).
+        if n_cal > 0:
+            X_cal = X_all[n_train:]
+            y_cal = y[n_train:]
+            naive_cal = naive_all[n_train:]
+            med_cal = (_PESO_MODELO * self._modelo_med.predict(X_cal)
+                       + (1 - _PESO_MODELO) * naive_cal)
+            p10_cal = med_cal + self._res_q[0.1]
+            p90_cal = med_cal + self._res_q[0.9]
+            # Puntuación CQR: positiva cuando y cae fuera del intervalo.
+            scores = np.maximum(p10_cal - y_cal, y_cal - p90_cal)
+            q_level = min((1 - _ALPHA) * (1 + 1.0 / n_cal), 1.0)
+            self._q_hat = float(np.quantile(scores, q_level))
+            self.n_cal_ = n_cal
+            self.usa_conformal_ = True
+        else:
+            self._q_hat = 0.0
+            self.n_cal_ = 0
+            self.usa_conformal_ = False
+
         self.usa_modelo_ = True
         self._fallback = None
         return self
@@ -355,7 +399,12 @@ class PrevisorGasto:
             naive = float(serie.loc[periodo_12]) if periodo_12 in serie.index else cur_lag
             med = _PESO_MODELO * med_modelo + (1 - _PESO_MODELO) * naive
             # Banda = combinación + cuantiles de residuos (monótona por construcción).
-            banda = np.clip(np.sort([med + self._res_q[q] for q in self.cuantiles]), 0.0, None)
+            p10_raw = med + self._res_q[0.1] - self._q_hat
+            p50_raw = med + self._res_q[0.5]
+            p90_raw = med + self._res_q[0.9] + self._q_hat
+            banda = np.clip(
+                [min(p10_raw, p50_raw), p50_raw, max(p90_raw, p50_raw)],
+                0.0, None)
             filas.append(self._fila(periodo, h, banda, recurrente))
             cur_lag = med  # rezago para el siguiente horizonte = mediana combinada
         return pd.DataFrame(filas)
